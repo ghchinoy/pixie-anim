@@ -10,7 +10,19 @@ We use AI-generated video as synthetic benchmarks to test the performance and co
 
 Large media files are generated via **Veo 3.1 Fast** and stored in `tests/fixtures/synthetic/`. These files are ignored by git to maintain repository health.
 
-**Standard Tooling:**
+**How to generate the 'cyberpunk_drone' benchmark:**
+1. Use the `veo_t2v` tool with the following parameters:
+   - **Prompt**: "A fast-paced drone shot through a neon-lit cyberpunk city with heavy rain and flickering lights."
+   - **Model**: `veo-3.1-fast-generate-preview`
+   - **Duration**: 8s
+   - **Output Directory**: `tests/fixtures/synthetic/`
+2. Extract frames at 15fps:
+   ```bash
+   mkdir -p tests/fixtures/synthetic/cyberpunk_frames
+   ffmpeg -i tests/fixtures/synthetic/veo_output.mp4 -vf "fps=15" tests/fixtures/synthetic/cyberpunk_frames/frame%03d.png
+   ```
+
+**Standard Tooling Defaults:**
 - **Model**: `veo-3.1-fast-generate-preview`
 - **Duration**: 8s
 - **Aspect Ratio**: 16:9
