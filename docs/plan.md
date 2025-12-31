@@ -50,7 +50,7 @@ graph TD
 - [x] Scaffold Lit project with Vite and TypeScript (`pixie-gif-ehz`).
 - [x] Build core components (dropzone, comparison, stats).
 - [x] Support direct MP4 frame extraction in the browser.
-- [ ] Support direct WebM frame extraction in the browser (`pixie-anim-83x`).
+- [ ] Support direct WebM frame extraction in the browser (`pixie-anim-83x`) [P0].
 - [x] Connect Lit UI to WASM core.
 
 ### Phase 5: WASM & Integration
