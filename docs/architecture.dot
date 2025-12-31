@@ -7,7 +7,10 @@ digraph G {
         label = "UI Layer (Lit)";
         style=dashed;
         Dropzone [label="<pixie-dropzone>"];
+        Extractor [label="Frame Extraction\n(MP4/GIF Decoder)"];
         Viewer [label="<pixie-viewer>"];
+        
+        Dropzone -> Extractor [label="File"];
     }
 
     subgraph cluster_wasm {
@@ -19,33 +22,33 @@ digraph G {
     subgraph cluster_core {
         label = "Rust Core (pixie_anim_lib)";
         
-        Delta [label="Delta Engine
-(Transparency + Bounding Box)"];
+        Sampler [label="Global Sampler\n(Whole Sequence)"];
         
         subgraph cluster_quant {
             label = "Quantization";
             KMeans [label="K-Means++ (Lab)"];
-            PlanarConvert [label="Planar Palette
-Conversion"];
-            SIMD [label="SIMD Nearest Color
-(AVX2/NEON)"];
+            PlanarConvert [label="Planar Palette\nConversion"];
+            SIMD [label="SIMD Nearest Color\n(AVX2/NEON)"];
             
             KMeans -> PlanarConvert -> SIMD;
         }
         
-        Zeng [label="Zeng Palette
-Reordering"];
-        LZW [label="LZW Encoder
-(Variable-bit)"];
+        Zeng [label="Zeng Palette\nReordering"];
         
-        Delta -> KMeans;
-        KMeans -> Zeng;
-        Zeng -> LZW;
+        Delta [label="Delta Engine\n(Fuzzy + Bounding Box)"];
+        
+        LZW [label="LZW Encoder\n(Lossy Neighbor Match)"];
+        
+        // Logical flow inside core
+        Sampler -> KMeans [label="10% Pixels"];
+        KMeans -> Zeng [label="Raw Palette"];
+        Zeng -> Delta [label="Global Palette"];
+        Delta -> LZW [label="Dithered Indices"];
     }
 
-    Dropzone -> WasmBindgen [label="Raw Pixels"];
+    Extractor -> WasmBindgen [label="RGBA Buffers"];
     WasmBindgen -> BufferMgr;
-    WasmBindgen -> Delta;
+    WasmBindgen -> Sampler;
     LZW -> WasmBindgen [label="GIF Bytes"];
     WasmBindgen -> Viewer [label="Blob URL"];
 }
