@@ -20,7 +20,7 @@ export class WebmDemuxer {
   /**
    * Reads a Variable Size Integer (VINT) used in EBML.
    */
-  private readVint(): { value: number; length: number } {
+  public readVint(): { value: number; length: number } {
     const firstByte = this.data[this.offset];
     let length = 1;
     let mask = 0x80;

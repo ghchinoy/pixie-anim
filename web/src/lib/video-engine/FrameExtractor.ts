@@ -44,22 +44,41 @@ export class FrameExtractor {
 
     // 2. Scan for Clusters and Blocks
     let element = this.demuxer.getNextElement();
+    let hasFoundFirstKeyframe = false;
+
     while (element) {
       if (element.id === WebmDemuxer.Segment || element.id === WebmDemuxer.Cluster) {
         // Step into container
       } else if (element.id === WebmDemuxer.SimpleBlock) {
+        // SimpleBlock Header:
+        // 1. Track Number (VINT)
+        // 2. Timecode (2 bytes)
+        // 3. Flags (1 byte)
+        
+        // Save current offset to restore after reading track number
+        const startOffset = this.demuxer.getOffset();
+        const trackVint = this.demuxer.readVint();
+        const flagsOffset = trackVint.length + 2;
+        
         const data = fileBuffer.slice(element.dataOffset, element.dataOffset + element.size);
+        const flags = data[flagsOffset];
+        const isKeyframe = (flags & 0x80) !== 0;
+
+        if (!hasFoundFirstKeyframe && !isKeyframe) {
+          // Skip until we find a keyframe to satisfy VideoDecoder
+          this.demuxer.seek(startOffset + element.size); 
+        } else {
+          hasFoundFirstKeyframe = true;
+          const chunk = new EncodedVideoChunk({
+            type: isKeyframe ? 'key' : 'delta',
+            timestamp: this.frameCount * 33333, // Placeholder 30fps
+            data: data.slice(flagsOffset + 1), // Payload follows flags
+          });
+          this.decoder.decode(chunk);
+        }
         
-        // WebM SimpleBlock format:
-        // [Track Number (VINT)] [Timecode (2 bytes)] [Flags (1 byte)] [Payload]
-        // For simplicity, we assume track 1 is video.
-        const chunk = new EncodedVideoChunk({
-          type: (data[3] & 0x80) ? 'key' : 'delta', // SimpleBlock keyframe bit
-          timestamp: this.frameCount * 33333, // Placeholder timestamp (30fps)
-          data: data.slice(4), // Approximate payload offset
-        });
-        
-        this.decoder.decode(chunk);
+        // Restore/Advance offset
+        this.demuxer.seek(startOffset + element.size);
       } else {
         this.demuxer.skip(element.size);
       }

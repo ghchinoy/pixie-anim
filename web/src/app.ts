@@ -3,8 +3,8 @@ import { customElement, state } from 'lit/decorators.js';
 import init, { encodeGif, decodeGif } from './lib/pixie-wasm/pixie.js';
 import { FrameExtractor } from './lib/video-engine/FrameExtractor.js';
 
-@customElement('pixo-app')
-export class PixoApp extends LitElement {
+@customElement('pixie-app')
+export class PixieApp extends LitElement {
   static styles = css`
     :host { display: block; --surface: #111; --border: #2a2a2a; --accent: #3b82f6; }
     * { font-family: system-ui, -apple-system, sans-serif; }
@@ -379,7 +379,7 @@ export class PixoApp extends LitElement {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d')!;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
         
         const buffer = new Uint8Array(width * height * numFrames * 4);
         
