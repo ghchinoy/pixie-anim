@@ -154,10 +154,10 @@ export class PixoApp extends LitElement {
 
         ${!this.resultUrl && !this.processing ? html`
           <div class="dropzone" @click=${this._triggerFile} @dragover=${this._handleDragOver} @drop=${this._handleDrop}>
-            <h3>DROP MP4 OR GIF</h3>
+            <h3>DROP MP4, WEBM OR GIF</h3>
             <p>Directly convert and optimize for the web</p>
             <button class="btn mt-2">SELECT FILE</button>
-            <input type="file" id="fileInput" hidden accept="video/mp4,image/gif" @change=${this._handleFileSelect}>
+            <input type="file" id="fileInput" hidden accept="video/mp4,video/webm,image/gif" @change=${this._handleFileSelect}>
           </div>
         ` : ''}
 
@@ -171,8 +171,8 @@ export class PixoApp extends LitElement {
         ${this.resultUrl ? html`
           <div class="preview-grid">
             <div class="panel">
-              <div class="panel-label">Original ${this.originalType === 'video/mp4' ? '(MP4)' : '(GIF)'}</div>
-              ${this.originalType === 'video/mp4' 
+              <div class="panel-label">Original ${this.originalType.replace('video/', '').toUpperCase().replace('IMAGE/', '')}</div>
+              ${this.originalType.startsWith('video/') 
                 ? html`<video src="${this.originalUrl}" autoplay loop muted></video>`
                 : html`<img src="${this.originalUrl}">`}
               <div class="stats">
@@ -205,7 +205,7 @@ export class PixoApp extends LitElement {
           </div>
           <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
             <button class="btn btn-ghost" @click=${this._clear}>CLEAR</button>
-            <a href="${this.resultUrl}" download="pixo.gif"><button class="btn">DOWNLOAD GIF</button></a>
+            <a href="${this.resultUrl}" download="pixie.gif"><button class="btn">DOWNLOAD GIF</button></a>
           </div>
         ` : ''}
       </div>
@@ -272,13 +272,12 @@ export class PixoApp extends LitElement {
         this.sourceFrames = view.getUint32(4, true);
         const avgDelayMs = view.getUint32(8, true);
         
-        // Correct FPS calculation: 1000ms / delay per frame
         this.sourceFps = avgDelayMs === 0 ? 10 : 1000 / avgDelayMs;
         this.fps = Math.round(this.sourceFps);
         
         this.sourceBuffer = new Uint8Array(rawData.buffer, rawData.byteOffset + 12, rawData.byteLength - 12);
-      } else if (file.type === 'video/mp4') {
-        this.status = 'ANALYZING MP4...';
+      } else if (file.type.startsWith('video/')) {
+        this.status = `ANALYZING ${file.type.split('/')[1].toUpperCase()}...`;
         const { buffer, width, height, numFrames, estimatedFps } = await this._extractFramesFromVideo(file);
         this.sourceWidth = width;
         this.sourceHeight = height;
@@ -286,6 +285,8 @@ export class PixoApp extends LitElement {
         this.sourceBuffer = buffer;
         this.sourceFps = estimatedFps;
         this.fps = Math.round(estimatedFps);
+      } else {
+        throw new Error('Unsupported file type. Please use MP4, WebM or GIF.');
       }
 
       await this._runOptimization(this.sourceBuffer!, this.sourceWidth, this.sourceHeight, this.sourceFrames);
