@@ -1,0 +1,25 @@
+# Rust
+/target
+Cargo.lock
+
+# Node / Web
+node_modules/
+/web/dist
+/web/src/lib/pixie-wasm/
+
+# Large Synthetic Assets
+/tests/fixtures/synthetic/*.mp4
+/tests/fixtures/synthetic/*.gif
+/tests/fixtures/synthetic/*.jpg
+/tests/fixtures/synthetic/*.png
+/tests/fixtures/synthetic/forest_frames/
+/tests/fixtures/synthetic/tmp_palette.png
+
+# Environment & Secrets
+.env
+
+# OS & IDE
+.DS_Store
+.vscode/
+.idea/
+*.log

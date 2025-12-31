@@ -1,0 +1,51 @@
+digraph G {
+    rankdir=TB;
+    node [shape=box, fontname="Arial", style=filled, fillcolor=white];
+    compound=true;
+
+    subgraph cluster_ui {
+        label = "UI Layer (Lit)";
+        style=dashed;
+        Dropzone [label="<pixie-dropzone>"];
+        Viewer [label="<pixie-viewer>"];
+    }
+
+    subgraph cluster_wasm {
+        label = "WASM Wrapper";
+        WasmBindgen [label="wasm-bindgen"];
+        BufferMgr [label="Talc Allocator"];
+    }
+
+    subgraph cluster_core {
+        label = "Rust Core (pixie_anim_lib)";
+        
+        Delta [label="Delta Engine
+(Transparency + Bounding Box)"];
+        
+        subgraph cluster_quant {
+            label = "Quantization";
+            KMeans [label="K-Means++ (Lab)"];
+            PlanarConvert [label="Planar Palette
+Conversion"];
+            SIMD [label="SIMD Nearest Color
+(AVX2/NEON)"];
+            
+            KMeans -> PlanarConvert -> SIMD;
+        }
+        
+        Zeng [label="Zeng Palette
+Reordering"];
+        LZW [label="LZW Encoder
+(Variable-bit)"];
+        
+        Delta -> KMeans;
+        KMeans -> Zeng;
+        Zeng -> LZW;
+    }
+
+    Dropzone -> WasmBindgen [label="Raw Pixels"];
+    WasmBindgen -> BufferMgr;
+    WasmBindgen -> Delta;
+    LZW -> WasmBindgen [label="GIF Bytes"];
+    WasmBindgen -> Viewer [label="Blob URL"];
+}
