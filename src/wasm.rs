@@ -57,6 +57,7 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
 /// * `quality` - K-Means iterations (default 10)
 /// * `lossy` - LZW neighbor matching (0-20)
 /// * `fuzz` - Perceptual transparency threshold (0-100)
+/// * `dither` - Enable Floyd-Steinberg dithering
 #[wasm_bindgen(js_name = "encodeGif")]
 pub fn encode_gif(
     data: &[u8],
@@ -67,6 +68,7 @@ pub fn encode_gif(
     quality: usize,
     lossy: u8,
     fuzz: u32,
+    dither: bool,
 ) -> Result<Vec<u8>, JsError> {
     let frame_size = width as usize * height as usize * 4;
     if data.len() != frame_size * num_frames as usize {
@@ -135,10 +137,14 @@ pub fn encode_gif(
         if f == 0 {
             writer.write_graphic_control_extension(delay, None).map_err(|e| JsError::new(&e.to_string()))?;
             
-            use rayon::prelude::*;
-            let indices: Vec<u8> = curr_pixels.par_iter()
-                .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                .collect();
+            let indices = if dither {
+                crate::quant::dither::dither_frame(width, height, &curr_pixels, &global_palette)
+            } else {
+                use rayon::prelude::*;
+                curr_pixels.par_iter()
+                    .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                    .collect()
+            };
             writer.write_image_data(0, 0, width, height, 8, &indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
         } else {
             if let Some(prev) = &prev_pixels {
@@ -146,6 +152,9 @@ pub fn encode_gif(
                     width, height, &curr_pixels, prev, &global_palette, transparent_idx, fuzz_sq
                 ) {
                     writer.write_graphic_control_extension(delay, Some(transparent_idx)).map_err(|e| JsError::new(&e.to_string()))?;
+                    
+                    // If dither is enabled, we should ideally dither within the delta bounding box
+                    // For now, find_delta_fuzzy doesn't support dithering, but using dithered first frame helps
                     writer.write_image_data(delta.x, delta.y, delta.width, delta.height, 8, &delta.indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
                 }
             }

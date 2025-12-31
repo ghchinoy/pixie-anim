@@ -109,6 +109,7 @@ export class PixoApp extends LitElement {
   @state() private fps = 12;
   @state() private lossy = 8;
   @state() private fuzz = 10;
+  @state() private dither = true;
 
   async firstUpdated() {
     await init();
@@ -145,6 +146,10 @@ export class PixoApp extends LitElement {
           <div class="control-group">
             <label>FPS</label>
             <input type="number" .value=${this.fps} @input=${(e: any) => this.fps = parseInt(e.target.value)}>
+          </div>
+          <div class="control-group">
+            <label>DITHER</label>
+            <input type="checkbox" .checked=${this.dither} @change=${(e: any) => this.dither = e.target.checked}>
           </div>
           ${this.sourceBuffer ? html`
             <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
@@ -407,7 +412,7 @@ export class PixoApp extends LitElement {
 
     try {
       const startTime = performance.now();
-      const gifBytes = encodeGif(buffer, width, height, numFrames, this.fps, this.quality, this.lossy, this.fuzz);
+      const gifBytes = encodeGif(buffer, width, height, numFrames, this.fps, this.quality, this.lossy, this.fuzz, this.dither);
       this.timeTaken = performance.now() - startTime;
       console.log(`✅ WASM Encoding took ${this.timeTaken}ms`);
 
