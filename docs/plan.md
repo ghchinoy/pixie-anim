@@ -58,6 +58,8 @@ graph TD
 - [x] Optimize WASM binary size via `talc` allocator (`pixie-gif-47s`).
 - [ ] Implement WASM-to-Native Parity Tests (`pixie-anim-d0s`).
 - [ ] Add 'Black Area' histogram regression test (`pixie-anim-h1z`).
+- [ ] Implement Vitest suite for video-engine logic (`pixie-anim-xbk`).
+- [ ] Document CDP 'Sidecar' Testing Protocol for `website-assistant` (`pixie-anim-07n`).
 
 ### Phase 6: Automated Subjective Evaluation
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
