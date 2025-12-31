@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import init, { encodeGif, decodeGif } from './lib/pixie-wasm/pixie.js';
+import { FrameExtractor } from './lib/video-engine/FrameExtractor.js';
 
 @customElement('pixo-app')
 export class PixoApp extends LitElement {
@@ -278,7 +279,21 @@ export class PixoApp extends LitElement {
         this.sourceBuffer = new Uint8Array(rawData.buffer, rawData.byteOffset + 12, rawData.byteLength - 12);
       } else if (file.type.startsWith('video/')) {
         this.status = `ANALYZING ${file.type.split('/')[1].toUpperCase()}...`;
-        const { buffer, width, height, numFrames, estimatedFps } = await this._extractFramesFromVideo(file);
+        
+        let result;
+        // Prefer WebCodecs for WebM (and MP4 if not on Safari which has limited WebCodecs support for some containers)
+        if (file.type === 'video/webm' || file.type === 'video/mp4') {
+          try {
+            result = await this._extractFramesViaWebCodecs(file);
+          } catch (e) {
+            console.warn('WebCodecs failed, falling back to Canvas extraction:', e);
+            result = await this._extractFramesFromVideo(file);
+          }
+        } else {
+          result = await this._extractFramesFromVideo(file);
+        }
+
+        const { buffer, width, height, numFrames, estimatedFps } = result;
         this.sourceWidth = width;
         this.sourceHeight = height;
         this.sourceFrames = numFrames;
@@ -295,6 +310,49 @@ export class PixoApp extends LitElement {
       alert('Error: ' + e);
       this.processing = false;
     }
+  }
+
+  private async _extractFramesViaWebCodecs(file: File): Promise<{buffer: Uint8Array, width: number, height: number, numFrames: number, estimatedFps: number}> {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // We need to know width/height/fps. For this P0, we'll use a temporary video element 
+    // just to get metadata, as parsing full WebM metadata in JS is complex.
+    const metadata = await new Promise<{width: number, height: number, duration: number}>((resolve) => {
+      const v = document.createElement('video');
+      v.src = URL.createObjectURL(file);
+      v.onloadedmetadata = () => {
+        resolve({ width: v.videoWidth, height: v.videoHeight, duration: v.duration });
+        URL.revokeObjectURL(v.src);
+      };
+    });
+
+    const captureFps = 15;
+    const numFramesExpected = Math.floor(metadata.duration * captureFps);
+    const buffer = new Uint8Array(metadata.width * metadata.height * numFramesExpected * 4);
+    let framesProcessed = 0;
+
+    const extractor = new FrameExtractor(async (frame) => {
+      if (framesProcessed < numFramesExpected) {
+        // Copy the VideoFrame directly to our buffer as RGBA
+        await frame.copyTo(buffer.subarray(framesProcessed * metadata.width * metadata.height * 4), {
+          format: 'RGBA'
+        });
+      }
+      framesProcessed++;
+      frame.close();
+      this.status = `EXTRACTING FRAME ${framesProcessed}...`;
+    });
+
+    await extractor.extract(bytes);
+
+    return { 
+      buffer, 
+      width: metadata.width, 
+      height: metadata.height, 
+      numFrames: framesProcessed, 
+      estimatedFps: captureFps 
+    };
   }
 
   private async _extractFramesFromVideo(file: File): Promise<{buffer: Uint8Array, width: number, height: number, numFrames: number, estimatedFps: number}> {

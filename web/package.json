@@ -7,7 +7,8 @@
     "dev": "npm run build-wasm && vite",
     "build": "npm run build-wasm && tsc && vite build",
     "build-wasm": "cd .. && cargo build --target wasm32-unknown-unknown --release --features wasm && wasm-bindgen --target web --out-dir web/src/lib/pixie-wasm --out-name pixie target/wasm32-unknown-unknown/release/pixie_anim_lib.wasm",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -15,8 +16,11 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
+    "@vitest/browser": "^4.0.16",
+    "playwright": "^1.57.0",
     "typescript": "~5.9.3",
-    "vite": "npm:rolldown-vite@7.2.5"
+    "vite": "npm:rolldown-vite@7.2.5",
+    "vitest": "^4.0.16"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"

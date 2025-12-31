@@ -82,7 +82,7 @@ pub fn encode_gif(
     for f in 0..num_frames_to_sample {
         let frame_idx = f * (num_frames as usize / num_frames_to_sample);
         let start = frame_idx * frame_size;
-        for i in (0..frame_size).step_by(400) { // sampled for speed
+        for i in (0..frame_size).step_by(100) { // sampled for speed
             sampled_pixels.push(Rgb {
                 r: data[start + i],
                 g: data[start + i + 1],
