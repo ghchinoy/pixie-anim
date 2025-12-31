@@ -62,6 +62,7 @@ graph TD
 - [ ] Document CDP 'Sidecar' Testing Protocol for `website-assistant` (`pixie-anim-07n`).
 
 ### Phase 6: Automated Subjective Evaluation
+- [ ] Implement GIF Metadata Fingerprinting (`pixie-anim-7vw`).
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
 - [x] Implement "Synthetic MOS" scoring for visual quality and artifacts.
 - [ ] Implement A/B Comparative Jury in `judge.rs` (`pixie-anim-9f5`).
