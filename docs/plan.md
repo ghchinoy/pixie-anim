@@ -55,16 +55,17 @@ graph TD
 ### Phase 5: WASM & Integration
 - [x] Create `wasm-bindgen` wrappers for the animation core (`pixie-gif-0nf`).
 - [x] Optimize WASM binary size via `talc` allocator (`pixie-gif-47s`).
+- [ ] Implement WASM-to-Native Parity Tests (`pixo-gif-b89`).
 
 ### Phase 6: Automated Subjective Evaluation
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
 - [x] Implement "Synthetic MOS" scoring for visual quality and artifacts.
 
 ### Future Exploration
-- [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (targeting the <15MB gifski zone).
+- [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixo-gif-c70`).
 - [ ] **Optimal LZW**: Look-ahead string matching logic.
-- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder (`pixie-gif-iaj`).
-- [ ] **WebM Support**: Native WebM decoding in the CLI.
+- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder (`pixo-gif-iaj`).
+- [ ] **MP4/WebM Benchmark Integration**: Native decoding in the CLI suite (`pixo-gif-o0g`).
 
 ## 4. Key Implementation Notes
 - **Memory**: Use dictionary reuse and Object URL revocation to avoid browser hangs on large animations.
