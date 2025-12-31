@@ -58,6 +58,8 @@ Optimize an image sequence:
 3. `npm run dev`
 4. Drop an MP4 or GIF into the browser to optimize locally.
 
+![Image](https://github.com/user-attachments/assets/e00a510b-cd7e-4dff-bcaf-ec35db5fe499)
+
 ## 👁️ Automated Evaluation
 Pixie-Anim includes a `judge` tool that uses **Gemini 3 Flash** to perform a comparative analysis of the output, identifying artifacts like banding or temporal jitter that traditional metrics (PSNR/SSIM) might miss.
 
