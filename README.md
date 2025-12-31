@@ -1,5 +1,9 @@
 # Pixie-Anim
 
+<p align="center">
+  <img src="docs/logo_wordmark.png" width="400" alt="Pixie-Anim Logo">
+</p>
+
 ![Pixie-Anim Architecture](docs/infographic.png)
 
 A high-performance, zero-dependency short-form animation optimizer written in Rust and WebAssembly.
