@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pixie-Anim vs Gifsicle vs FFmpeg Benchmark Runner
+# Pixie-Anim vs Gifsicle vs FFmpeg vs gifski Benchmark Runner
 # Usage: ./benchmark.sh <frame_dir> <original_video> <output_name>
 
 if [ "$#" -ne 3 ]; then
@@ -15,6 +15,7 @@ PIXIE_OUT="tests/fixtures/synthetic/${NAME}_pixie.gif"
 BASELINE_OUT="tests/fixtures/synthetic/${NAME}_baseline.gif"
 GIFSICLE_OUT="tests/fixtures/synthetic/${NAME}_gifsicle.gif"
 FFMPEG_OUT="tests/fixtures/synthetic/${NAME}_ffmpeg.gif"
+GIFSKI_OUT="tests/fixtures/synthetic/${NAME}_gifski.gif"
 PALETTE_OUT="tests/fixtures/synthetic/${NAME}_palette.png"
 
 # Ensure environment is set for the judge
@@ -25,66 +26,95 @@ fi
 echo "--- 🏃 Starting Macro Benchmark: $NAME ---"
 
 # 1. Run Pixie-Anim
-echo "[1/6] Running Pixie-Anim (Dithered)..."
+echo "[1/4] Running Pixie-Anim (Dithered)..."
 START=$(date +%s%N)
 cargo run --release --features="cli" --bin pixie-anim -- $FRAME_DIR/*.png --fps 15 --dither --output $PIXIE_OUT > /dev/null 2>&1
 END=$(date +%s%N)
 PIXIE_TIME=$(echo "scale=3; ($END - $START) / 1000000000" | bc)
 
-# 2. Create Baseline via FFmpeg (needed for Gifsicle)
-echo "[2/5] Creating baseline GIF via FFmpeg..."
+# 2. Run Gifsicle -O3
+echo "[2/4] Running Gifsicle -O3..."
+# Create a simple baseline for Gifsicle
 ffmpeg -y -i $FRAME_DIR/frame%03d.png -vf "palettegen=max_colors=256" tests/fixtures/synthetic/tmp_palette.png > /dev/null 2>&1
 ffmpeg -y -i $FRAME_DIR/frame%03d.png -i tests/fixtures/synthetic/tmp_palette.png -lavfi "paletteuse" $BASELINE_OUT > /dev/null 2>&1
-
-# 3. Run Gifsicle -O3
-echo "[3/5] Running Gifsicle -O3..."
 START=$(date +%s%N)
 gifsicle -O3 $BASELINE_OUT -o $GIFSICLE_OUT
 END=$(date +%s%N)
 GIFSICLE_TIME=$(echo "scale=3; ($END - $START) / 1000000000" | bc)
 
-# 4. Run 2-pass FFmpeg (High Quality)
-echo "[4/6] Running 2-pass FFmpeg..."
+# 3. Run 2-pass FFmpeg (High Quality)
+echo "[3/4] Running 2-pass FFmpeg..."
 START=$(date +%s%N)
 ffmpeg -y -i $FRAME_DIR/frame%03d.png -vf "palettegen" $PALETTE_OUT > /dev/null 2>&1
 ffmpeg -y -i $FRAME_DIR/frame%03d.png -i $PALETTE_OUT -lavfi "paletteuse" $FFMPEG_OUT > /dev/null 2>&1
 END=$(date +%s%N)
 FFMPEG_TIME=$(echo "scale=3; ($END - $START) / 1000000000" | bc)
 
-# 5. Run gifski (Ultra Quality)
-echo "[5/6] Running gifski..."
-GIFSKI_OUT="tests/fixtures/synthetic/${NAME}_gifski.gif"
+# 4. Run gifski (Ultra Quality)
+echo "[4/4] Running gifski..."
 START=$(date +%s%N)
 gifski -o $GIFSKI_OUT $FRAME_DIR/*.png > /dev/null 2>&1
 END=$(date +%s%N)
 GIFSKI_TIME=$(echo "scale=3; ($END - $START) / 1000000000" | bc)
 
-# 6. Run Gemini Judge
-echo "[6/6] Running Gemini Subjective Judge..."
-JUDGE_RESULT=$(cargo run --release --features="cli" --bin judge -- $ORIGINAL_VIDEO $PIXIE_OUT 2>/dev/null)
-SCORE=$(echo "$JUDGE_RESULT" | grep -o '"score": [0-9]*' | head -1 | cut -d' ' -f2)
-REASONING=$(echo "$JUDGE_RESULT" | sed -n 's/.*"reasoning": "\([^"]*\)".*/\1/p' | head -1)
+# 5. Run Gemini Judge for all tools
+echo "⚖️  Running Gemini Subjective Judge for all outputs..."
 
-# 7. Results
+run_judge() {
+    local target_file=$1
+    local result=$(cargo run --release --features="cli" --bin judge -- $ORIGINAL_VIDEO $target_file 2>/dev/null)
+    echo "$result"
+}
+
+echo "  -> Judging Pixie-Anim..."
+RES_PIXIE=$(run_judge $PIXIE_OUT)
+SCORE_PIXIE=$(echo "$RES_PIXIE" | grep -o '"score": [0-9]*' | head -1 | cut -d' ' -f2)
+REASON_PIXIE=$(echo "$RES_PIXIE" | sed -n 's/.*"reasoning": "\([^"]*\)".*/\1/p' | head -1)
+
+echo "  -> Judging Gifsicle..."
+RES_GIFSICLE=$(run_judge $GIFSICLE_OUT)
+SCORE_GIFSICLE=$(echo "$RES_GIFSICLE" | grep -o '"score": [0-9]*' | head -1 | cut -d' ' -f2)
+REASON_GIFSICLE=$(echo "$RES_GIFSICLE" | sed -n 's/.*"reasoning": "\([^"]*\)".*/\1/p' | head -1)
+
+echo "  -> Judging FFmpeg..."
+RES_FFMPEG=$(run_judge $FFMPEG_OUT)
+SCORE_FFMPEG=$(echo "$RES_FFMPEG" | grep -o '"score": [0-9]*' | head -1 | cut -d' ' -f2)
+REASON_FFMPEG=$(echo "$RES_FFMPEG" | sed -n 's/.*"reasoning": "\([^"]*\)".*/\1/p' | head -1)
+
+echo "  -> Judging gifski..."
+RES_GIFSKI=$(run_judge $GIFSKI_OUT)
+SCORE_GIFSKI=$(echo "$RES_GIFSKI" | grep -o '"score": [0-9]*' | head -1 | cut -d' ' -f2)
+REASON_GIFSKI=$(echo "$RES_GIFSKI" | sed -n 's/.*"reasoning": "\([^"]*\)".*/\1/p' | head -1)
+
+# 6. Results
 PIXIE_SIZE=$(du -k "$PIXIE_OUT" | cut -f1)
 GIFSICLE_SIZE=$(du -k "$GIFSICLE_OUT" | cut -f1)
 FFMPEG_SIZE=$(du -k "$FFMPEG_OUT" | cut -f1)
 GIFSKI_SIZE=$(du -k "$GIFSKI_OUT" | cut -f1)
 
 echo ""
-echo "--- 📊 Benchmark Results: $NAME ---"
+echo "--- 📊 Macro Benchmark Results: $NAME ---"
 echo "Tool        | Time (s) | Size (KB) | Subjective Score (1-10)"
 echo "------------|----------|-----------|-------------------------"
-echo "Pixie-Anim  | $PIXIE_TIME | $PIXIE_SIZE | $SCORE"
-echo "Gifsicle    | $GIFSICLE_TIME | $GIFSICLE_SIZE | -"
-echo "FFmpeg      | $FFMPEG_TIME | $FFMPEG_SIZE | -"
-echo "gifski      | $GIFSKI_TIME | $GIFSKI_SIZE | -"
+echo "Pixie-Anim  | $PIXIE_TIME | $PIXIE_SIZE | $SCORE_PIXIE"
+echo "Gifsicle    | $GIFSICLE_TIME | $GIFSICLE_SIZE | $SCORE_GIFSICLE"
+echo "FFmpeg      | $FFMPEG_TIME | $FFMPEG_SIZE | $SCORE_FFMPEG"
+echo "gifski      | $GIFSKI_TIME | $GIFSKI_SIZE | $SCORE_GIFSKI"
 echo "------------|----------|-----------|-------------------------"
+
 echo ""
-echo "Gemini Reasoning: $REASONING"
+echo "--- 🧠 Gemini Subjective Reasoning ---"
+echo "Pixie-Anim: $REASON_PIXIE"
+echo ""
+echo "Gifsicle:   $REASON_GIFSICLE"
+echo ""
+echo "FFmpeg:     $REASON_FFMPEG"
+echo ""
+echo "gifski:     $REASON_GIFSKI"
 
 # Calculate improvement vs Gifsicle
 if [ ! -z "$GIFSICLE_SIZE" ] && [ "$GIFSICLE_SIZE" -ne 0 ]; then
     SIZE_DIFF=$(echo "scale=1; (1 - $PIXIE_SIZE / $GIFSICLE_SIZE) * 100" | bc)
-    echo "Compression Improvement vs Gifsicle: $SIZE_DIFF%"
+    echo ""
+    echo "Compression Improvement (Pixie vs Gifsicle): $SIZE_DIFF%"
 fi
