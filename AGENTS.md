@@ -67,6 +67,9 @@ For full workflow details: `bd prime`
 - **Beads (Issue Tracking)**: Use `bd ready` to find work and `bd close <id>` to finish. Status updates are handled via `bd update <id> --status <status>`.
 
 
+- **WASM & Web Integration**: The WASM bindings in `web/src/lib/pixie-wasm/` are git-ignored. If Vite reports missing imports for `pixie.js`, ensure `npm run build-wasm` has been executed. The `dev` script in `web/package.json` is configured to run this automatically.
+
+
 - **Reference Code**: Always consult `~/dev/github/pixo` for SIMD patterns, WASM bindings, and "Pixo" stylistic conventions before implementing core modules.
 
 
@@ -112,3 +115,29 @@ For full workflow details: `bd prime`
 
 
 
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds

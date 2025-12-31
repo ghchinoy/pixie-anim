@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run build-wasm && vite",
     "build": "npm run build-wasm && tsc && vite build",
     "build-wasm": "cd .. && cargo build --target wasm32-unknown-unknown --release --features wasm && wasm-bindgen --target web --out-dir web/src/lib/pixie-wasm --out-name pixie target/wasm32-unknown-unknown/release/pixie_anim_lib.wasm",
     "preview": "vite preview"

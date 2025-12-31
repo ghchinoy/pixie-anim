@@ -53,9 +53,10 @@ Optimize an image sequence:
 ```
 
 ### Web Playground
+The web UI is a Lit-based application that leverages the Rust core via WASM.
 1. `cd web`
-2. `npm install`
-3. `npm run dev`
+2. `pnpm install`
+3. `pnpm run dev` (This automatically triggers `build-wasm` to generate bindings)
 4. Drop an MP4 or GIF into the browser to optimize locally.
 
 ![Image](https://github.com/user-attachments/assets/e00a510b-cd7e-4dff-bcaf-ec35db5fe499)

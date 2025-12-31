@@ -8,12 +8,9 @@ node_modules/
 /web/src/lib/pixie-wasm/
 
 # Large Synthetic Assets
-/tests/fixtures/synthetic/*.mp4
-/tests/fixtures/synthetic/*.gif
-/tests/fixtures/synthetic/*.jpg
-/tests/fixtures/synthetic/*.png
-/tests/fixtures/synthetic/forest_frames/
-/tests/fixtures/synthetic/tmp_palette.png
+tests/fixtures/synthetic/**
+!tests/fixtures/synthetic/README.md
+!tests/fixtures/synthetic/.gitkeep
 
 # Environment & Secrets
 .env

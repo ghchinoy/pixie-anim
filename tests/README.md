@@ -1,0 +1,28 @@
+# Pixie-Anim Tests & Benchmarking
+
+This directory contains parity tests and serves as the staging area for benchmarking assets.
+
+## Synthetic Benchmarking Assets
+
+We use AI-generated video as synthetic benchmarks to test the performance and compression of the Pixie-Anim engine across various motion profiles.
+
+### Generation Workflow
+
+Large media files are generated via **Veo 3.1 Fast** and stored in `tests/fixtures/synthetic/`. These files are ignored by git to maintain repository health.
+
+**Standard Tooling:**
+- **Model**: `veo-3.1-fast-generate-preview`
+- **Duration**: 8s
+- **Aspect Ratio**: 16:9
+
+### Reference Prompts
+
+1. **High Motion**: "A fast-paced drone shot through a neon-lit cyberpunk city with heavy rain and flickering lights."
+2. **Low Motion/Flat**: "A static overhead shot of a minimalist workspace with a slow-moving clock hand."
+3. **Complex Texture**: "A close-up of colorful liquid ink swirling in water, creating complex gradients and transitions."
+
+## Parity Tests
+- `parity.js`: Verifies that the WASM module correctly initializes and exports the expected functions. Can be run via `node tests/parity.js` after building the WASM module.
+
+## Benchmarking Script
+The root `benchmark.sh` uses these fixtures to compare Pixie-Anim against `gifsicle` and `ffmpeg`.
