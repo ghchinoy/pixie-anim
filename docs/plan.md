@@ -50,18 +50,21 @@ graph TD
 - [x] Scaffold Lit project with Vite and TypeScript (`pixie-gif-ehz`).
 - [x] Build core components (dropzone, comparison, stats).
 - [x] Support direct MP4 frame extraction in the browser.
-- [ ] Support direct WebM frame extraction in the browser (`pixie-anim-83x`) [P0].
+- [x] Support direct WebM frame extraction in the browser (`pixie-anim-83x`).
 - [x] Connect Lit UI to WASM core.
 
 ### Phase 5: WASM & Integration
 - [x] Create `wasm-bindgen` wrappers for the animation core (`pixie-gif-0nf`).
 - [x] Optimize WASM binary size via `talc` allocator (`pixie-gif-47s`).
 - [ ] Implement WASM-to-Native Parity Tests (`pixie-anim-d0s`).
+- [ ] Add 'Black Area' histogram regression test (`pixie-anim-h1z`).
 
 ### Phase 6: Automated Subjective Evaluation
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
 - [x] Implement "Synthetic MOS" scoring for visual quality and artifacts.
-
+- [ ] Implement A/B Comparative Jury in `judge.rs` (`pixie-anim-9f5`).
+- [ ] Create 'Gradient Stress' synthetic fixture (`pixie-anim-d35`).
+- [ ] Implement confidence protocol (`pixie-anim-end`) [P1].
 ### Future Exploration
 - [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixo-gif-c70`).
 - [ ] **Optimal LZW**: Look-ahead string matching logic.
