@@ -1,0 +1,55 @@
+digraph G {
+    rankdir=TB;
+    node [shape=box, fontname="Arial", style="rounded,filled", fillcolor="#f9f9f9"];
+    edge [fontname="Arial", fontsize=10];
+
+    // Inputs
+    Source [label="Synthetic Source\n(Veo 3.1 MP4)", shape=cylinder, fillcolor="#e1f5fe"];
+    
+    // Processors
+    subgraph cluster_dev {
+        label = "Development & Tuning Loop";
+        style=dashed;
+        color="#666666";
+        
+        Pixie [label="Pixie-Anim Engine", fillcolor="#fff9c4", style="filled,bold"];
+        Baselines [label="Baselines\n(Gifsicle, FFmpeg, gifski)", fillcolor="#f5f5f5"];
+        Params [label="Algorithm Selection &\nParameter Adjustment\n(Lossy, Fuzz, Dither)", shape=parallelogram, fillcolor="#e8f5e9"];
+        
+        Params -> Pixie [label="Iterate"];
+    }
+
+    // Outputs
+    PixieOut [label="Pixie-Anim GIF", fillcolor="#fff9c4"];
+    BaseOut [label="Baseline GIFs", fillcolor="#f5f5f5"];
+
+    // Analysis
+    subgraph cluster_bench {
+        label = "Automated Benchmarking (benchmark.sh)";
+        style=filled;
+        color="#eeeeee";
+        
+        Metrics [label="Objective Metrics\n(Size, Time, PSNR)", fillcolor="#ffffff"];
+        Gemini [label="Gemini 3 Flash\n(Subjective Judge)", fillcolor="#d1c4e9", style="filled,bold"];
+    }
+
+    // Report
+    Report [label="Grand Jury Report\n(Size vs Perceptual Quality)", shape=note, fillcolor="#fff3e0"];
+
+    // Connections
+    Source -> Pixie;
+    Source -> Baselines;
+    Source -> Gemini [label="Reference", style=dotted];
+    
+    Pixie -> PixieOut;
+    Baselines -> BaseOut;
+    
+    PixieOut -> Metrics;
+    PixieOut -> Gemini [label="Evaluation"];
+    BaseOut -> Gemini [label="Comparison"];
+    
+    Metrics -> Report;
+    Gemini -> Report [label="Reasoning & MOS"];
+    
+    Report -> Params [label="Feedback Loop", color="#1976d2", penwidth=2];
+}
