@@ -1,5 +1,7 @@
 # Pixie-Anim
 
+![Pixie-Anim Architecture](docs/infographic.png)
+
 A high-performance, zero-dependency short-form animation optimizer written in Rust and WebAssembly.
 
 Inspired by Lee Robinson's [pixo](https://github.com/leerob/pixo), Pixie-Anim follows a similar philosophy: building mission-critical codecs from scratch without heavy runtime dependencies, optimized for both native CLI performance and zero-latency in-browser execution.
