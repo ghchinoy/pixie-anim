@@ -62,12 +62,20 @@ graph TD
 - [ ] Document CDP 'Sidecar' Testing Protocol for `website-assistant` (`pixie-anim-07n`).
 
 ### Phase 6: Automated Subjective Evaluation
-- [ ] Implement GIF Metadata Fingerprinting (`pixie-anim-7vw`).
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
 - [x] Implement "Synthetic MOS" scoring for visual quality and artifacts.
 - [ ] Implement A/B Comparative Jury in `judge.rs` (`pixie-anim-9f5`).
 - [ ] Create 'Gradient Stress' synthetic fixture (`pixie-anim-d35`).
 - [ ] Implement confidence protocol (`pixie-anim-end`) [P1].
+- [ ] Implement GIF Metadata Fingerprinting (`pixie-anim-7vw`).
+
+### Phase 7: Rust Ecosystem & Crate Publication (Epic: `pixie-anim-2vc`)
+- [ ] Refine Public API surface for library usage (`pixie-anim-ae9`).
+- [ ] Comprehensive Crate Documentation (`pixie-anim-569`).
+- [ ] Add usage examples in `/examples` directory (`pixie-anim-dqw`).
+- [ ] Automated CI/CD for Crate Quality (`pixie-anim-c9h`).
+- [ ] Initial Publication to `crates.io` (`pixie-anim-4vs`).
+
 ### Future Exploration
 - [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixo-gif-c70`).
 - [ ] **Optimal LZW**: Look-ahead string matching logic.
