@@ -56,10 +56,13 @@ graph TD
 ### Phase 5: WASM & Integration
 - [x] Create `wasm-bindgen` wrappers for the animation core (`pixie-gif-0nf`).
 - [x] Optimize WASM binary size via `talc` allocator (`pixie-gif-47s`).
+- [ ] Implement chunked frame encoding to reduce memory pressure (`pixie-anim-uwf`) [P1].
+- [ ] Implement frame-by-frame extraction and processing in UI (`pixie-anim-j6l`) [P1].
 - [ ] Implement WASM-to-Native Parity Tests (`pixie-anim-d0s`).
 - [ ] Add 'Black Area' histogram regression test (`pixie-anim-h1z`).
 - [ ] Implement Vitest suite for video-engine logic (`pixie-anim-xbk`).
 - [ ] Document CDP 'Sidecar' Testing Protocol for `website-assistant` (`pixie-anim-07n`).
+- [ ] Add end-to-end integration test for WebM to GIF (`pixie-anim-68r`) [P2].
 
 ### Phase 6: Automated Subjective Evaluation
 - [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
