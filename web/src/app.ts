@@ -333,15 +333,28 @@ export class PixieApp extends LitElement {
     });
 
     const captureFps = 15;
-    const numFramesExpected = Math.floor(metadata.duration * captureFps);
-    const buffer = new Uint8Array(metadata.width * metadata.height * numFramesExpected * 4);
+    const maxDimension = 640;
+    let width = metadata.width;
+    let height = metadata.height;
+
+    if (width > maxDimension || height > maxDimension) {
+      const scale = maxDimension / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    const numFramesExpected = Math.min(Math.floor(metadata.duration * captureFps), 300); // Cap at 300 frames (20s @ 15fps)
+    const buffer = new Uint8Array(width * height * numFramesExpected * 4);
     let framesProcessed = 0;
 
     const extractor = new FrameExtractor(async (frame) => {
       if (framesProcessed < numFramesExpected) {
         // Copy the VideoFrame directly to our buffer as RGBA
-        await frame.copyTo(buffer.subarray(framesProcessed * metadata.width * metadata.height * 4), {
-          format: 'RGBA'
+        await frame.copyTo(buffer.subarray(framesProcessed * width * height * 4), {
+          format: 'RGBA',
+          rect: { x: 0, y: 0, width: frame.displayWidth, height: frame.displayHeight },
+          destWidth: width,
+          destHeight: height
         });
       }
       framesProcessed++;
@@ -353,8 +366,8 @@ export class PixieApp extends LitElement {
 
     return { 
       buffer, 
-      width: metadata.width, 
-      height: metadata.height, 
+      width, 
+      height, 
       numFrames: framesProcessed, 
       estimatedFps: captureFps 
     };
@@ -368,13 +381,20 @@ export class PixieApp extends LitElement {
       video.src = URL.createObjectURL(file);
       
       video.onloadedmetadata = async () => {
-        const width = video.videoWidth;
-        const height = video.videoHeight;
+        const maxDimension = 640;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+        if (width > maxDimension || height > maxDimension) {
+          const scale = maxDimension / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+
         const duration = video.duration;
         
         const captureFps = 15;
         const interval = 1 / captureFps;
-        const numFrames = Math.floor(duration * captureFps);
+        const numFrames = Math.min(Math.floor(duration * captureFps), 300);
         
         const canvas = document.createElement('canvas');
         canvas.width = width;
