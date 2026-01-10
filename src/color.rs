@@ -1,10 +1,16 @@
-//! Color space conversions and perceptual distance.
+use crate::quant::Rgb;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Lab {
     pub l: f32,
     pub a: f32,
     pub b: f32,
+}
+
+impl From<Rgb> for Lab {
+    fn from(rgb: Rgb) -> Self {
+        rgb_to_lab(rgb.r, rgb.g, rgb.b)
+    }
 }
 
 /// Converts RGB to CIELAB using D65 illuminant.

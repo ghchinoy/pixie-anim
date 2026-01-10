@@ -298,3 +298,25 @@ Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.
 
 ---
 
+## Benchmark: space_waves_api_regression (2026-01-10 16:27:55.022151 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.867 | 9821.73 | 7.0 |
+| Gifsicle | 2.178 | 19034.63 | 7.0 |
+| FFmpeg | 2.854 | 19290.80 | 6.0 |
+| gifski | 1.702 | 13589.32 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization handles a very complex color palette (nebula and cosmic waves) reasonably well by using heavy dithering to avoid flat-color banding. While the vibrant purples and golds are preserved, the image suffers from significant graininess due to the 256-color limitation of the GIF format. Texture detail on the waves remains surprisingly sharp, but the smooth gradients of the original nebula are now replaced by a coarse dithered pattern.
+
+**Gifsicle**: The optimized GIF maintains the overall color profile and high-level composition of the original scene. However, due to the complex color gradients and fine details in the nebula and water-like surface, heavy dithering is present throughout the frames. This creates a pervasive grainy texture that masks the original's smooth transitions and fine specular highlights.
+
+**FFmpeg**: The optimized GIF shows significant texture degradation compared to the original due to the heavy dithering required to manage the complex color gradients and star fields. The 256-color limitation is very apparent, resulting in a pervasive graininess across both the sky and the wave surfaces. While dithering helps mitigate severe color banding in the nebula, it obscures the fine specular highlights and the sharpness of the star points.
+
+**gifski**: The optimized GIF handles an extremely challenging cosmic scene with a wide color gamut and complex gradients reasonably well. To avoid severe color banding in the nebulae and sky, a dense dithering pattern was applied. While this preserves the general appearance of gradients, it introduces significant graininess and 'noise' compared to the smooth original. Fine textures in the gaseous waves have lost their soft, ethereal quality, becoming more granular.
+
+
+---
+
