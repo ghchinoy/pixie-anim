@@ -88,7 +88,20 @@ For full workflow details: `bd prime`
 
 4. **Subjective Evaluation**: Use `gemini-3-flash-preview` for visual quality checks. Since it doesn't support `image/gif`, extract key frames as PNGs for comparison.
 
+## Hill-Climbing & Quality Tuning Protocol
 
+To improve Pixie-Anim's visual quality score, follow this iterative protocol:
+
+1. **Establish Baseline**: Run a full E2E benchmark on a synthetic video fixture:
+   ```bash
+   ./target/release/pixie-bench --input tests/fixtures/synthetic/video.mp4 --name base_test --report tests/benchmarks.md
+   ```
+2. **Analyze Critique**: Review the `Subjective Reasoning` in the report. Look for keywords like "banding" (needs better quantization), "grainy" (needs better dithering), or "soft" (needs better detail preservation).
+3. **Iterate (The Speed Dial)**: Tweak parameters or code, then run the benchmark against the *already extracted* frames to save time:
+   ```bash
+   ./target/release/pixie-bench --input tests/fixtures/synthetic/base_test_frames/ --original tests/fixtures/synthetic/video.mp4 --name iter_1 --quality 20 --lossy 5
+   ```
+4. **Target Score**: Goal is a Subjective Score >= 7.0 while maintaining a size advantage of >30% over Gifsicle.
 
 
 ## Landing the Plane (Session Completion)
