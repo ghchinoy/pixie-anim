@@ -44,7 +44,11 @@ else
 fi
 
 # 3. Cleanup
-echo "🧹 Cleaning up intermediate frames..."
-rm -rf "$FRAME_DIR"
+if [[ "$*" == *"--cleanup"* ]]; then
+    echo "🧹 Cleaning up intermediate frames..."
+    rm -rf "$FRAME_DIR"
+else
+    echo "💾 Frames retained in $FRAME_DIR for iterative benchmarking."
+fi
 
 echo "✅ E2E Test Complete for $TEST_NAME"

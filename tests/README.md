@@ -21,6 +21,15 @@ Large media files are generated via **Veo 3.1 Fast** and stored in `tests/fixtur
    ./tests/run_e2e_test.sh tests/fixtures/synthetic/my_video.mp4 my_test_name tests/benchmarks.md
    ```
 
+**Iterative Benchmarking Workflow:**
+To iterate quickly on code changes without re-extracting frames:
+1. Run `./tests/run_e2e_test.sh` once to extract frames.
+2. Make changes to Pixie-Anim or `benchmark.sh`.
+3. Run the benchmark script directly using the retained frames:
+   ```bash
+   ./benchmark.sh tests/fixtures/synthetic/my_test_name_frames/ tests/fixtures/synthetic/my_video.mp4 my_test_name
+   ```
+
 **Cleanup Utilities:**
 Intermediate PNG frames and output GIFs can be cleaned up using:
 ```bash
