@@ -7,10 +7,18 @@ use crate::lzw::LzwEncoder;
 use image::GenericImageView;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DitherType {
+    None,
+    FloydSteinberg,
+    BlueNoise,
+    Ordered,
+}
+
 pub struct OptimizationOptions {
     pub quality: usize,
     pub fps: f32,
-    pub dither: bool,
+    pub dither: DitherType,
     pub lossy: u8,
     pub fuzz: u32,
 }
@@ -75,13 +83,16 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
         if i == 0 {
             writer.write_graphic_control_extension(delay, None)?;
             
-            let indices = if options.dither {
-                crate::quant::dither::dither_frame(width as u16, height as u16, &curr_pixels, &global_palette)
-            } else {
-                use rayon::prelude::*;
-                curr_pixels.par_iter()
-                    .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                    .collect()
+            let indices = match options.dither {
+                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette),
+                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette),
+                DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette),
+                DitherType::None => {
+                    use rayon::prelude::*;
+                    curr_pixels.par_iter()
+                        .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                        .collect()
+                }
             };
             writer.write_image_data(0, 0, width as u16, height as u16, 8, &indices, &mut lzw_encoder)?;
         } else {
@@ -93,7 +104,8 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
                     prev, 
                     &global_palette, 
                     transparent_idx,
-                    fuzz_sq
+                    fuzz_sq,
+                    options.dither,
                 ) {
                     writer.write_graphic_control_extension(delay, Some(transparent_idx))?;
                     writer.write_image_data(delta.x, delta.y, delta.width, delta.height, 8, &delta.indices, &mut lzw_encoder)?;

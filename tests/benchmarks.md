@@ -188,3 +188,69 @@ Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
 
 ---
 
+## Benchmark: cat_blue_noise (2026-01-10 14:19:36.658827 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 3.396 | 11441.87 | 4.0 |
+| Gifsicle | 2.320 | 21849.95 | 7.0 |
+| FFmpeg | 2.534 | 21911.65 | 6.0 |
+| gifski | 1.563 | 14832.96 | 5.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization suffers from extreme dithering artifacts across the entire frame. While the general colors are maintained, the smooth gradients of the aurora and the soft texture of the snow are replaced with a heavy, noisy grain. Fine details on the cat's fur and the pine needles are significantly obscured by the dither pattern. The high-frequency noise will likely cause 'crawling' artifacts during playback.
+
+**Gifsicle**: The complex color gradients of the aurora borealis present a significant challenge for the GIF format, resulting in visible dithering and subtle color banding in the sky. While the central subject (the cat) retains good detail and texture, the fine patterns of the falling snow and the smooth transitions in the background sky suffer from the limited 256-color palette.
+
+**FFmpeg**: The optimized GIF shows significant dithering artifacts, particularly in the gradients of the aurora borealis and the night sky. This is a result of the 256-color palette limitation of the GIF format attempting to reproduce smooth color transitions. While the main subject (the cat) and the high-contrast snow-covered trees maintain acceptable detail, the overall image texture feels grainy compared to the clean original.
+
+**gifski**: The optimization shows significant quality degradation due to the 256-color limitation of the GIF format. There is heavy dithering across the entire image, particularly noticeable on the snow and in the dark areas of the sky. The smooth gradients of the aurora borealis have been replaced by coarse banding and dither patterns. Fine details in the cat's fur and the pine needles on the trees are partially obscured by these artifacts.
+
+
+---
+
+## Benchmark: cat_blue_noise_v2 (2026-01-10 14:20:29.049670 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 3.491 | 11441.87 | 4.0 |
+| Gifsicle | 2.349 | 21849.95 | 6.0 |
+| FFmpeg | 2.608 | 21911.65 | 6.0 |
+| gifski | 1.633 | 14832.96 | 6.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimized GIF exhibits significant quality degradation due to aggressive dithering across all frames. While this helps prevent harsh color banding in the aurora gradients, it creates a pervasive 'noise' or 'grain' that obscures fine textures in the cat's fur and the snowy ground. The 256-color palette limitation is very apparent, resulting in a loss of the original's crispness and depth.
+
+**Gifsicle**: The optimization suffers significantly in the aurora borealis regions, where the limited GIF color palette causes noticeable color banding and stair-stepping in the gradients. To compensate for the color depth loss, heavy dithering is applied throughout the starry sky and snow, resulting in a grainier texture compared to the smooth original. The structural detail of the cat's fur is mostly preserved, but the overall aesthetic quality is diminished by the background artifacts.
+
+**FFmpeg**: The conversion to GIF introduces significant dithering and color banding, particularly in the complex gradients of the aurora borealis and the night sky. While the main subject (the cat) retains its form, the fine texture of its fur becomes grainy. The snow on the trees also loses some of its soft detail, appearing more pixelated.
+
+**gifski**: The optimized frames exhibit significant dithering across the entire image to compensate for the limited GIF color palette, particularly visible in the aurora borealis and the night sky. While this preserves the general color accuracy, it introduces a grainy texture that obscures fine details like individual snowflakes and fur patterns. The smooth gradients of the original are replaced by stippled patterns, which often leads to 'boiling' noise in motion.
+
+
+---
+
+## Benchmark: cat_ordered (2026-01-10 14:22:16.296725 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.985 | 10609.03 | 6.0 |
+| Gifsicle | 2.342 | 21849.95 | 6.0 |
+| FFmpeg | 2.538 | 21911.65 | 5.0 |
+| gifski | 1.573 | 14832.96 | 6.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization process has introduced significant dithering noise throughout the image to compensate for the GIF's 256-color limitation. This is most noticeable in the smooth gradients of the aurora borealis and the night sky, which now appear grainy. The fine texture of the cat's fur and the soft snow has been replaced by high-frequency noise artifacts, though the overall sharpness and composition remain intact.
+
+**Gifsicle**: The conversion to GIF introduces significant dithering across the aurora borealis and sky to compensate for the limited color palette. This results in a grainy appearance in areas that should be smooth gradients. Fine details in the cat's fur and the snow texture are also somewhat obscured by the dithering patterns.
+
+**FFmpeg**: The optimization shows significant quality degradation typical of the GIF format's 256-color limitation. The most prominent issue is heavy color banding and blocky transitions in the aurora borealis gradients. Extensive dithering (noise) is visible across the entire image, particularly in the dark night sky and the shadows on the snow, which muddies the fine textures of the cat's fur and the crispness of the stars.
+
+**gifski**: The optimized version suffers from significant dithering artifacts across the sky gradients and the snow-covered foreground, which is typical for GIFs trying to replicate high-color depth scenes like an aurora borealis. While the overall composition and contrast are maintained, the fine textures of the cat's fur and the pine needles on the trees are noticeably degraded and replaced by granular noise.
+
+
+---
+

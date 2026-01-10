@@ -1,5 +1,5 @@
 use clap::Parser;
-use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
+use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence, DitherType};
 use pixie_anim_lib::evaluation::Judge;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -38,9 +38,9 @@ struct Cli {
     #[arg(short, long, default_value = "5")]
     fuzz: u32,
 
-    /// Disable Floyd-Steinberg dithering
-    #[arg(long)]
-    no_dither: bool,
+    /// Dithering type: none, floyd, blue, ordered
+    #[arg(long, default_value = "floyd")]
+    dither: String,
 
     /// Cleanup frames after benchmark
     #[arg(long)]
@@ -129,12 +129,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let judge = Judge::new(api_key, "gemini-3-flash-preview");
     let mut results = Vec::new();
 
+    let dither_type = match cli.dither.to_lowercase().as_str() {
+        "floyd" | "fs" => DitherType::FloydSteinberg,
+        "blue" | "bn" => DitherType::BlueNoise,
+        "ordered" | "bayer" => DitherType::Ordered,
+        _ => DitherType::None,
+    };
+
     // 1. Pixie-Anim (Internal)
     println!("[1/4] Running Pixie-Anim (Internal)...");
     let options = OptimizationOptions {
         quality: cli.quality,
         fps: 15.0,
-        dither: !cli.no_dither,
+        dither: dither_type,
         lossy: cli.lossy,
         fuzz: cli.fuzz,
     };
