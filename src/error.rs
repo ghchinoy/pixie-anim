@@ -8,6 +8,7 @@ pub enum Error {
     InvalidGif(String),
     LzwError(String),
     QuantizationError(String),
+    Internal(String),
 }
 
 impl fmt::Display for Error {
@@ -17,6 +18,7 @@ impl fmt::Display for Error {
             Error::InvalidGif(s) => write!(f, "Invalid GIF: {}", s),
             Error::LzwError(s) => write!(f, "LZW error: {}", s),
             Error::QuantizationError(s) => write!(f, "Quantization error: {}", s),
+            Error::Internal(s) => write!(f, "Internal error: {}", s),
         }
     }
 }

@@ -12,6 +12,12 @@ pub mod gif;
 pub mod lzw;
 pub mod quant;
 
+#[cfg(feature = "cli")]
+pub mod common;
+
+#[cfg(feature = "cli")]
+pub mod evaluation;
+
 #[cfg(feature = "simd")]
 pub mod simd;
 
