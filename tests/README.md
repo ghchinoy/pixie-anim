@@ -14,8 +14,19 @@ Large media files are generated via **Veo 3.1 Fast** and stored in `tests/fixtur
 1. Generate a video using `veo_t2v` and save to `tests/fixtures/synthetic/my_video.mp4`.
 2. Run the E2E test script which handles extraction and benchmarking:
    ```bash
+   # Simple run
    ./tests/run_e2e_test.sh tests/fixtures/synthetic/my_video.mp4 my_test_name
+
+   # Run and append to a markdown report
+   ./tests/run_e2e_test.sh tests/fixtures/synthetic/my_video.mp4 my_test_name tests/benchmarks.md
    ```
+
+**Cleanup Utilities:**
+Intermediate PNG frames and output GIFs can be cleaned up using:
+```bash
+./tests/cleanup_fixtures.sh         # Cleans artifacts, keeps source videos
+./tests/cleanup_fixtures.sh --all   # Cleans everything including videos
+```
 
 **How to generate the 'cyberpunk_drone' benchmark (Manual):**
 1. Use the `veo_t2v` tool from the [Vertex AI GenMedia MCP Servers](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia) with the following parameters:
