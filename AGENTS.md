@@ -16,37 +16,21 @@
 
 ## Issue Tracking
 
-
-
 This project uses **bd (beads)** for issue tracking.
 
 Run `bd prime` for workflow context, or install hooks (`bd hooks install`) for auto-injection.
 
 
-
 **Quick reference:**
 
 - `bd ready` - Find unblocked work
-
 - `bd create "Title" --type task --priority 2` - Create issue
-
 - `bd close <id>` - Complete work
-
 - `bd sync` - Sync with git (run at session end)
-
-
 
 For full workflow details: `bd prime`
 
-
-
 ## Temporary File & Test Fixture Management Policy
-
-
-
-
-
-
 
 1. **Synthetic Assets**: Large media files generated via AI (Veo, etc.) for benchmarking should be stored in `tests/fixtures/synthetic/`.
 
@@ -54,25 +38,16 @@ For full workflow details: `bd prime`
 
 3. **Reproducibility**: When generating a synthetic asset, record the prompt and tool parameters in the relevant task or a `README.md` within the fixtures directory.
 
-
 4. **Cleanup**: Temporary build artifacts or intermediate conversion files should be placed in the system temp directory or the project's ignored `target/` directory.
 
 
 ## Tool Heuristics & Lessons Learned
 
-
 - **Veo (Video Generation)**: Prefer `veo-3.1-fast-generate-preview` (Veo 3) as it supports audio and offers faster generation. When using older models like `veo-2.0-generate-001`, `generate_audio` must be explicitly set to `false`.
-
-
 - **Beads (Issue Tracking)**: Use `bd ready` to find work and `bd close <id>` to finish. Status updates are handled via `bd update <id> --status <status>`.
-
-
 - **WASM & Web Integration**: The WASM bindings in `web/src/lib/pixie-wasm/` are git-ignored. If Vite reports missing imports for `pixie.js`, ensure `npm run build-wasm` has been executed. The `dev` script in `web/package.json` is configured to run this automatically.
-
-
+- **WebCodecs**: `VideoFrame.copyTo` does not support scaling (no `destWidth`/`destHeight`). To resize frames during extraction, draw the `VideoFrame` to an `OffscreenCanvas` of the target size and use `getImageData`.
 - **Reference Code**: Always consult `~/dev/github/pixo` for SIMD patterns, WASM bindings, and "Pixo" stylistic conventions before implementing core modules.
-
-
 
 ## Code Standards for Codecs
 

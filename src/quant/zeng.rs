@@ -3,7 +3,7 @@
 //! Reorders palette indices to improve LZW compression by ensuring 
 //! visually similar colors have adjacent indices.
 
-use crate::quant::{Rgb, Palette};
+use crate::quant::Palette;
 
 /// Reorders the palette using a greedy TSP approximation.
 /// Returns (new_palette, index_mapping) where index_mapping[old_idx] = new_idx.

@@ -347,15 +347,14 @@ export class PixieApp extends LitElement {
     const buffer = new Uint8Array(width * height * numFramesExpected * 4);
     let framesProcessed = 0;
 
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d')!;
+
     const extractor = new FrameExtractor(async (frame) => {
       if (framesProcessed < numFramesExpected) {
-        // Copy the VideoFrame directly to our buffer as RGBA
-        await frame.copyTo(buffer.subarray(framesProcessed * width * height * 4), {
-          format: 'RGBA',
-          rect: { x: 0, y: 0, width: frame.displayWidth, height: frame.displayHeight },
-          destWidth: width,
-          destHeight: height
-        });
+        ctx.drawImage(frame, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
+        buffer.set(imageData.data, framesProcessed * width * height * 4);
       }
       framesProcessed++;
       frame.close();

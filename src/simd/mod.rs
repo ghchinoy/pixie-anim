@@ -1,22 +1,22 @@
 //! SIMD acceleration module for performance-critical operations.
 
-use std::sync::LazyLock;
 use crate::quant::Rgb;
-
-pub mod fallback;
+#[cfg(target_arch = "x86_64")]
+use std::sync::LazyLock;
 
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SimdLevel {
-    #[cfg(target_arch = "x86_64")]
-    Avx2,
-    Scalar,
-}
-
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::PlanarLabPalette;
+
+pub mod fallback;
+
+#[cfg(target_arch = "x86_64")]
+enum SimdLevel {
+    Scalar,
+    Avx2,
+}
 
 #[cfg(target_arch = "x86_64")]
 static SIMD_LEVEL: LazyLock<SimdLevel> = LazyLock::new(|| {

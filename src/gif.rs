@@ -128,7 +128,8 @@ mod tests {
         palette[0] = 255; // Red
         writer.write_global_palette(&palette).unwrap();
         
-        writer.write_image_data(1, 1, &[0]).unwrap();
+        let mut encoder = LzwEncoder::new(2);
+        writer.write_image_data(0, 0, 1, 1, 2, &[0], &mut encoder).unwrap();
         writer.write_trailer().unwrap();
         
         assert!(buffer.starts_with(b"GIF89a"));

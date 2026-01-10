@@ -2,7 +2,6 @@ use clap::Parser;
 use image::GenericImageView;
 use pixie_anim_lib::gif::{GifWriter, GifOptions};
 use pixie_anim_lib::quant::{Rgb, KMeansQuantizer, Quantizer};
-use pixie_anim_lib::delta::find_delta_fuzzy;
 use pixie_anim_lib::lzw::LzwEncoder;
 use std::path::PathBuf;
 use std::fs::File;

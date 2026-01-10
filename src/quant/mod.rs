@@ -44,50 +44,6 @@ impl KMeansQuantizer {
             dither: true,
         }
     }
-
-    fn distance_sq(c1: Rgb, c2: Rgb) -> u32 {
-        let dr = c1.r as i32 - c2.r as i32;
-        let dg = c1.g as i32 - c2.g as i32;
-        let db = c1.b as i32 - c2.b as i32;
-        (dr * dr + dg * dg + db * db) as u32
-    }
-
-    /// K-Means++ initialization for centroids
-    fn initialize_centroids(pixels: &[Rgb], max_colors: usize) -> Vec<Rgb> {
-        if pixels.is_empty() { return Vec::new(); }
-        
-        let mut centroids = Vec::with_capacity(max_colors);
-        centroids.push(pixels[0]);
-        
-        let mut min_distances = vec![u32::MAX; pixels.len()];
-
-        while centroids.len() < max_colors {
-            let last_centroid = centroids.last().unwrap();
-            let mut total_dist: u64 = 0;
-
-            for (i, &pixel) in pixels.iter().enumerate() {
-                let dist = Self::distance_sq(pixel, *last_centroid);
-                if dist < min_distances[i] {
-                    min_distances[i] = dist;
-                }
-                total_dist += min_distances[i] as u64;
-            }
-
-            if total_dist == 0 { break; }
-
-            let mut best_pixel_idx = 0;
-            let mut max_d = 0;
-            for (i, &d) in min_distances.iter().enumerate() {
-                if d > max_d {
-                    max_d = d;
-                    best_pixel_idx = i;
-                }
-            }
-            centroids.push(pixels[best_pixel_idx]);
-        }
-        
-        centroids
-    }
 }
 
 impl Quantizer for KMeansQuantizer {
@@ -196,7 +152,8 @@ mod tests {
             Rgb { r: 0, g: 255, b: 0 },
             Rgb { r: 1, g: 254, b: 0 },
         ];
-        let quantizer = KMeansQuantizer::new(10);
+        let mut quantizer = KMeansQuantizer::new(10);
+        quantizer.sample_rate = 1;
         let result = quantizer.quantize(&pixels, 2).unwrap();
         assert_eq!(result.palette.colors.len(), 2);
     }
