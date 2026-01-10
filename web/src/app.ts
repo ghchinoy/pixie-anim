@@ -88,9 +88,32 @@ export class PixieApp extends LitElement {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .help-btn {
+      background: none; border: 1px solid var(--border); color: #666;
+      border-radius: 50%; width: 18px; height: 18px; font-size: 0.6rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: 0.2s;
+    }
+    .help-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: flex; align-items: center;
+      justify-content: center; z-index: 100;
+    }
+    .modal {
+      background: #111; border: 1px solid var(--border); padding: 2rem;
+      max-width: 500px; border-radius: 4px; font-size: 0.8rem; line-height: 1.5;
+    }
+    .modal h2 { font-size: 1rem; margin-top: 0; color: var(--accent); }
+    .modal code { background: #000; padding: 2px 4px; border-radius: 2px; }
+    .modal-close {
+      background: var(--accent); color: #000; border: none; padding: 0.5rem 1rem;
+      border-radius: 2px; font-weight: bold; cursor: pointer; margin-top: 1.5rem;
+    }
   `;
 
   @state() private processing = false;
+  @state() private showHelp = false;
   @state() private resultUrl = '';
   @state() private originalUrl = '';
   @state() private originalSize = 0;
@@ -156,6 +179,7 @@ export class PixieApp extends LitElement {
               <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
             </select>
           </div>
+          <button class="help-btn" @click=${() => this.showHelp = true}>?</button>
           ${this.sourceBuffer ? html`
             <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
               RE-OPTIMIZE
@@ -219,6 +243,29 @@ export class PixieApp extends LitElement {
             <a href="${this.resultUrl}" download="pixie.gif"><button class="btn">DOWNLOAD GIF</button></a>
           </div>
         ` : ''}
+      </div>
+      ${this.showHelp ? this._renderHelpModal() : ''}
+    `;
+  }
+
+  private _renderHelpModal() {
+    return html`
+      <div class="modal-overlay" @click=${() => this.showHelp = false}>
+        <div class="modal" @click=${(e: any) => e.stopPropagation()}>
+          <h2>Pixie Sauce Optimization Guide</h2>
+          <p><strong>QUALITY:</strong> K-Means iterations. Higher values (15-20) produce better color clusters at the cost of processing time.</p>
+          <p><strong>LOSSY:</strong> Advanced Fuzzy LZW matching. Values > 0 allow the encoder to match "visually similar" colors, dramatically reducing file size (up to 40%).</p>
+          <p><strong>FUZZY:</strong> Temporal transparency threshold. Pixels that haven't changed "enough" since the last frame are treated as transparent.</p>
+          <p><strong>DITHER:</strong>
+            <ul>
+              <li><code>NONE</code>: Sharpest, but causes color banding.</li>
+              <li><code>FLOYD</code>: Spatial error diffusion. Best for static images, but causes "shimmering" in video.</li>
+              <li><code>BLUE</code>: Perceptual deterministic noise. High quality film-like grain.</li>
+              <li><code>ORDERED</code>: Bayer 8x8 matrix. Maximum temporal stability for video.</li>
+            </ul>
+          </p>
+          <button class="modal-close" @click=${() => this.showHelp = false}>GOT IT</button>
+        </div>
       </div>
     `;
   }
