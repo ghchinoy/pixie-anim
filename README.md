@@ -4,6 +4,13 @@
   <img src="docs/logo_wordmark.png" width="400" alt="Pixie-Anim Logo">
 </p>
 
+<p align="center">
+  <a href="https://crates.io/crates/pixie-anim"><img src="https://img.shields.io/crates/v/pixie-anim.svg" alt="Crates.io"></a>
+  <a href="https://docs.rs/pixie-anim"><img src="https://docs.rs/pixie-anim/badge.svg" alt="Docs.rs"></a>
+  <a href="https://github.com/ghchinoy/pixie-anim/actions/workflows/deploy.yml"><img src="https://github.com/ghchinoy/pixie-anim/actions/workflows/deploy.yml/badge.svg" alt="Build Status"></a>
+  <img src="https://img.shields.io/crates/l/pixie-anim.svg" alt="License">
+</p>
+
 ![Pixie-Anim Architecture](docs/infographic.png)
 
 A high-performance, zero-dependency short-form animation optimizer written in Rust and WebAssembly.
