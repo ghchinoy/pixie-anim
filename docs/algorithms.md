@@ -82,3 +82,26 @@ A unified Rust binary that orchestrates the "Hill-Climbing" process:
 - **Temporally Stable Dithering**: Move beyond Floyd-Steinberg to Blue Noise or Bayer masks to eliminate "shimmering" between frames.
 - **SIMD Lab Math**: Target Apple Silicon NEON and x86 AVX2 for 8-way parallel color matching.
 - **Chunked Encoding**: Stream frames to the encoder to support 1000+ frame animations without OOM.
+
+---
+
+## 6. Discussion & Analysis
+
+### The Temporal Stability Problem
+Our empirical tests (see `tests/benchmarks.md`) reveal a persistent issue common to error-diffusion dithering (Floyd-Steinberg): **The Shimmer**.
+
+Because Floyd-Steinberg propagates errors spatially based on preceding pixels, even a single twinkling star or a slight shift in lighting can cause the entire frame's dither pattern to recalculate differently. When played back at 15fps, this manifests as high-frequency "crawling" noise in static areas. 
+
+### Why Blue Noise?
+To reach a **Subjective Score of 7.0+**, we are researching **Blue Noise Masking**. 
+
+Unlike Floyd-Steinberg, which is *reactive* (spatial), Blue Noise is *deterministic* (mask-based):
+1. **Determinism**: A pixel's dither threshold is determined by its coordinate $(x, y)$ against a pre-computed noise mask. If the pixel's color doesn't change between frames, the dither pattern remains **100% identical**, eliminating temporal shimmering.
+2. **Perceptual Smoothness**: Blue Noise is characterized by a lack of low-frequency components. To the human eye, it looks like "fine film grain" rather than the "clumpy patterns" produced by cheaper Ordered Dithering (Bayer).
+
+### Implementation Strategy
+The primary challenge is the **Zero-Dependency** mandate. We must decide between:
+- **Procedural Generation**: Generating the Blue Noise array at runtime (expensive initialization).
+- **Embedded Static Mask**: Storing a pre-computed 64x64 or 128x128 mask as a byte array in the binary (increases binary size but optimizes for execution speed).
+
+By transitioning to Blue Noise, we expect to bridge the quality gap with `gifski` while maintaining our significant compression lead over `Gifsicle`.

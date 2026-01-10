@@ -45,6 +45,7 @@ For full workflow details: `bd prime`
 - **Beads (Issue Tracking)**: Use `bd ready` to find work and `bd close <id>` to finish. Status updates are handled via `bd update <id> --status <status>`.
 - **WASM & Web Integration**: The WASM bindings in `web/src/lib/pixie-wasm/` are git-ignored. If Vite reports missing imports for `pixie.js`, ensure `npm run build-wasm` has been executed. The `dev` script in `web/package.json` is configured to run this automatically.
 - **WebCodecs**: `VideoFrame.copyTo` does not support scaling (no `destWidth`/`destHeight`). To resize frames during extraction, draw the `VideoFrame` to an `OffscreenCanvas` of the target size and use `getImageData`.
+- **Temporal Stability**: Spatial error diffusion (Floyd-Steinberg) causes "shimmering" in video. For animations, prefer deterministic mask-based dithering (like Blue Noise) to ensure static areas remain consistent across frames.
 - **Reference Code**: Always consult `~/dev/github/pixo` for SIMD patterns, WASM bindings, and "Pixo" stylistic conventions before implementing core modules.
 
 ## Code Standards for Codecs
