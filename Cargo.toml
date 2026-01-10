@@ -21,6 +21,11 @@ name = "judge"
 path = "src/bin/judge.rs"
 required-features = ["cli"]
 
+[[bin]]
+name = "pixie-bench"
+path = "src/bin/pixie-bench.rs"
+required-features = ["cli"]
+
 [features]
 default = ["simd"]
 simd = []
