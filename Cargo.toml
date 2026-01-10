@@ -2,9 +2,15 @@
 name = "pixie-anim"
 version = "0.1.0"
 edition = "2021"
-description = "A zero-dependency, SIMD-accelerated animation optimizer"
+description = "A zero-dependency, SIMD-accelerated GIF optimizer"
 license = "MIT"
 default-run = "pixie-anim"
+repository = "https://github.com/ghchinoy/pixie-anim"
+homepage = "https://ghchinoy.github.io/pixie-anim/"
+readme = "README.md"
+keywords = ["gif", "lzw", "optimizer", "wasm", "simd"]
+categories = ["multimedia::images", "compression", "wasm"]
+rust-version = "1.70"
 
 [lib]
 name = "pixie_anim_lib"
