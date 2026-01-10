@@ -10,6 +10,8 @@ A high-performance, zero-dependency short-form animation optimizer written in Ru
 
 Inspired by Lee Robinson's [pixo](https://github.com/leerob/pixo), Pixie-Anim follows a similar philosophy: building mission-critical codecs from scratch without heavy runtime dependencies, optimized for both native CLI performance and zero-latency in-browser execution.
 
+- **📖 Read more**: [Optimizing GIFs with Pixo: Extending Lessons Learned](https://ghc.wtf/writing/optimizing-gifs-with-pixo-extending-lessons-learned/) - A technical writeup on the architecture and philosophy behind Pixie-Anim.
+
 
 ## 🚀 Key Features
 
@@ -70,11 +72,6 @@ The web UI is a Lit-based application that leverages the Rust core via WASM.
 ## 👁️ Automated Evaluation
 Pixie-Anim includes a `judge` tool that uses **Gemini 3 Flash** to perform a comparative analysis of the output, identifying artifacts like banding or temporal jitter that traditional metrics (PSNR/SSIM) might miss.
 
-## 📖 Resources
-- **Deep Dive**: [Optimizing GIFs with Pixo: Extending Lessons Learned](https://ghc.wtf/writing/optimizing-gifs-with-pixo-extending-lessons-learned/) - A technical writeup on the architecture and philosophy behind Pixie-Anim.
-
----
-Part of the **Pixie** family of high-performance media tools
 
 ## 📋 Prerequisites
 
@@ -95,3 +92,7 @@ Install on macOS via Homebrew:
 ```bash
 brew install ffmpeg gifsicle gifski bc
 ```
+
+
+---
+Part of the **Pixie** family of high-performance media tools
