@@ -67,6 +67,21 @@ The web UI is a Lit-based application that leverages the Rust core via WASM.
 
 *Note: To prevent browser memory exhaustion, the web playground currently scales video to 640px and caps extraction at 300 frames. Use the CLI for unlimited high-resolution processing.*
 
+### 📊 Benchmarking & Evaluation
+Pixie-Anim includes a unified benchmarking tool to compare performance and visual quality against `Gifsicle`, `FFmpeg`, and `gifski`.
+
+See [tests/README.md](tests/README.md) for detailed instructions on the **Hill-Climbing** workflow and iterative performance tuning.
+
+**Quick Benchmark:**
+```bash
+./target/release/pixie-bench --input video.mp4 --name my_test --lossy 8 --report tests/benchmarks.md
+```
+This tool automatically:
+1. Extracts frames via `ffmpeg`.
+2. Runs the optimization suite across all four engines.
+3. Invokes the **Gemini Subjective Judge** for quality scoring.
+4. Generates a detailed Markdown report with size, speed, and visual critique.
+
 ![Image](https://github.com/user-attachments/assets/e00a510b-cd7e-4dff-bcaf-ec35db5fe499)
 
 ## 👁️ Automated Evaluation
