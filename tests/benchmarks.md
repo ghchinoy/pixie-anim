@@ -320,3 +320,25 @@ Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.
 
 ---
 
+## Benchmark: space_waves_final_regression (2026-01-10 16:33:14.570815 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.877 | 9821.73 | 6.0 |
+| Gifsicle | 2.181 | 19034.63 | 5.0 |
+| FFmpeg | 2.990 | 19290.80 | 5.0 |
+| gifski | 1.632 | 13589.32 | 6.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The transition from the original video to the optimized GIF results in significant quality degradation due to the 256-color palette limitation. The complex gradients in the nebula and the iridescent wave surface suffer from heavy dithering and visible color banding. While the overall composition and 'glow' are maintained, the fine 'stardust' texture of the original is replaced by a noisy, patterned dither.
+
+**Gifsicle**: The optimized GIF suffers from significant quality loss due to the inherent 256-color limitation of the format being applied to a complex, multi-tonal scene. The most prominent issue is heavy dithering across the sky and sea, which replaces smooth gradients with a grainy texture. Fine details, such as smaller stars and the delicate ripples on the waves, are blurred or lost entirely to compression.
+
+**FFmpeg**: The optimization process has significantly impacted the visual quality, primarily due to the limitations of the GIF format's 256-color palette. Heavy dithering is visible across the entire image to compensate for the complex gradients in the nebula and the waves, leading to a pervasive grainy texture. Additionally, there is a complete loss of temporal motion in the provided optimized frames (p1, p2, and p3 are identical), whereas the original frames show progression in the wave patterns and cosmic movement.
+
+**gifski**: The complex gradients of the nebulae and the iridescent water surface are poorly handled by the GIF format's 256-color limit. While the optimizer used heavy dithering to prevent color banding, this has resulted in a significant amount of noise and a grainy texture across the entire image. Fine details, such as the smaller stars in the background, have lost their sharp definition and are blended into the dithering pattern.
+
+
+---
+

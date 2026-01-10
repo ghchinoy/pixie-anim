@@ -10,47 +10,67 @@ use crate::error::Result;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
+/// Representation of an RGB color.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rgb {
+    /// Red channel (0-255)
     pub r: u8,
+    /// Green channel (0-255)
     pub g: u8,
+    /// Blue channel (0-255)
     pub b: u8,
 }
 
+/// Dithering algorithms supported by Pixie-Anim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DitherType {
+    /// No dithering (sharp edges, potential banding)
     None,
+    /// Spatial error diffusion (Floyd-Steinberg)
     FloydSteinberg,
+    /// Deterministic perceptual noise
     BlueNoise,
+    /// Matrix-based deterministic dithering (Bayer 8x8)
     Ordered,
 }
 
+/// A collection of colors representing a GIF palette.
 pub struct Palette {
+    /// The colors in the palette.
     pub colors: Vec<Rgb>,
 }
 
 /// Result of quantization including the palette and a mapping from 
 /// the intermediate refinement indices to the final reordered indices.
 pub struct QuantizationResult {
+    /// The final generated palette.
     pub palette: Palette,
+    /// Mapping from intermediate indices to final reordered indices.
     pub index_mapping: Vec<u8>,
 }
 
+/// Common trait for color quantizers.
 pub trait Quantizer {
+    /// Quantizes a slice of pixels into a palette of at most `max_colors`.
     fn quantize(&self, pixels: &[Rgb], max_colors: usize) -> Result<QuantizationResult>;
 }
 
+/// A K-Means++ based quantizer that operates in CIELAB space.
 pub struct KMeansQuantizer {
+    /// Maximum number of iterations for the clustering algorithm.
     pub max_iterations: usize,
-    pub sample_rate: usize, // e.g. 10 for 10% sampling
+    /// Pixel sampling rate (e.g. 10 for 10% sampling)
+    pub sample_rate: usize,
+    /// Whether to use dithering during index generation.
     pub dither: bool,
 }
 
 impl KMeansQuantizer {
+    /// Creates a new KMeansQuantizer with default settings.
     pub fn new(max_iterations: usize) -> Self {
         Self { 
             max_iterations,
-            sample_rate: 10, // Default to 10% sampling for speed
+            sample_rate: 10,
             dither: true,
         }
     }
@@ -64,7 +84,6 @@ impl KMeansQuantizer {
         if pixels.is_empty() { return Vec::new(); }
         
         let mut centroids = Vec::with_capacity(max_colors);
-        // Start with a random pixel (or just the first one for stability in testing)
         centroids.push(pixels[0]);
         
         let mut min_distances = vec![f32::MAX; pixels.len()];
@@ -83,8 +102,6 @@ impl KMeansQuantizer {
 
             if total_dist == 0.0 { break; }
 
-            // Pick the next centroid based on weighted probability
-            // For P0, we'll pick the point furthest from all current centroids
             let mut best_pixel_idx = 0;
             let mut max_d = -1.0;
             for (i, &d) in min_distances.iter().enumerate() {

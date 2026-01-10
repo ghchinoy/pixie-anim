@@ -4,27 +4,36 @@ use crate::error::Result;
 use crate::lzw::LzwEncoder;
 use std::io::Write;
 
+/// Options for configuring the GIF output.
 pub struct GifOptions {
+    /// Width of the logical screen.
     pub width: u16,
+    /// Height of the logical screen.
     pub height: u16,
+    /// Whether to include a global color table.
     pub has_global_palette: bool,
-    pub palette_size: u8, // power of 2: 2^(n+1)
+    /// Size of the palette as a power of 2 (2^(n+1)).
+    pub palette_size: u8,
 }
 
+/// A writer for creating GIF89a formatted data.
 pub struct GifWriter<W: Write> {
     writer: W,
 }
 
 impl<W: Write> GifWriter<W> {
+    /// Creates a new GifWriter wrapping the provided output stream.
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
 
+    /// Writes the GIF89a header.
     pub fn write_header(&mut self) -> Result<()> {
         self.writer.write_all(b"GIF89a")?;
         Ok(())
     }
 
+    /// Writes the Logical Screen Descriptor block.
     pub fn write_logical_screen_descriptor(&mut self, options: &GifOptions) -> Result<()> {
         self.writer.write_all(&options.width.to_le_bytes())?;
         self.writer.write_all(&options.height.to_le_bytes())?;
@@ -40,6 +49,7 @@ impl<W: Write> GifWriter<W> {
         Ok(())
     }
 
+    /// Writes the Netscape Application Block for infinite looping.
     pub fn write_netscape_loop_block(&mut self) -> Result<()> {
         self.writer.write_all(&[0x21, 0xFF, 0x0B])?; // extension introducer, application label, block size
         self.writer.write_all(b"NETSCAPE2.0")?;
@@ -49,11 +59,13 @@ impl<W: Write> GifWriter<W> {
         Ok(())
     }
 
+    /// Writes the global palette data.
     pub fn write_global_palette(&mut self, palette: &[u8]) -> Result<()> {
         self.writer.write_all(palette)?;
         Ok(())
     }
 
+    /// Writes a Graphic Control Extension block for a frame.
     pub fn write_graphic_control_extension(&mut self, delay: u16, transparent_idx: Option<u8>) -> Result<()> {
         self.writer.write_all(&[0x21, 0xF9, 0x04])?; // introducer, label, size
         
@@ -67,6 +79,7 @@ impl<W: Write> GifWriter<W> {
         Ok(())
     }
 
+    /// Writes encoded image data sub-blocks.
     pub fn write_image_data(&mut self, x: u16, y: u16, width: u16, height: u16, lzw_min_code_size: u8, indices: &[u8], encoder: &mut LzwEncoder) -> Result<()> {
         // Image Descriptor
         self.writer.write_all(&[0x2C])?; // separator
@@ -93,6 +106,7 @@ impl<W: Write> GifWriter<W> {
         Ok(())
     }
 
+    /// Writes the GIF trailer byte.
     pub fn write_trailer(&mut self) -> Result<()> {
         self.writer.write_all(&[0x3B])?;
         Ok(())

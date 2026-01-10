@@ -10,11 +10,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use serde_json::Value;
 
+/// An automated judge that uses Vision AI to evaluate quality.
 pub struct Judge {
     ai: Gemini,
 }
 
 impl Judge {
+    /// Creates a new Judge with the provided API key and model.
     pub fn new(api_key: String, model: &str) -> Self {
         let ai = Gemini::new(
             api_key,
@@ -27,6 +29,7 @@ impl Judge {
         Self { ai }
     }
 
+    /// Extracts a few key frames from a video or GIF for evaluation.
     pub fn extract_evaluation_frames(input: &Path, prefix: &str) -> Vec<PathBuf> {
         let mut frames = Vec::new();
         let temp_dir = std::env::temp_dir();
@@ -50,6 +53,7 @@ impl Judge {
         frames
     }
 
+    /// Performs a side-by-side evaluation of an original video and an optimized GIF.
     pub async fn evaluate(&self, original: &Path, optimized: &Path) -> Result<Value> {
         let orig_frames = Self::extract_evaluation_frames(original, "orig");
         let opt_frames = Self::extract_evaluation_frames(optimized, "opt");

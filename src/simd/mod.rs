@@ -10,6 +10,7 @@ pub mod x86_64;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::PlanarLabPalette;
 
+/// Fallback scalar implementations.
 pub mod fallback;
 
 #[cfg(target_arch = "x86_64")]
@@ -27,16 +28,22 @@ static SIMD_LEVEL: LazyLock<SimdLevel> = LazyLock::new(|| {
     }
 });
 
+/// A color palette stored in a planar layout for SIMD efficiency.
 #[cfg(not(target_arch = "x86_64"))]
 pub struct PlanarLabPalette {
+    /// L components
     pub l: Vec<f32>,
+    /// a components
     pub a: Vec<f32>,
+    /// b components
     pub b: Vec<f32>,
+    /// Number of colors in the palette
     pub len: usize,
 }
 
 #[cfg(not(target_arch = "x86_64"))]
 impl PlanarLabPalette {
+    /// Creates a planar palette from a slice of Lab colors.
     pub fn from_lab(colors: &[crate::color::Lab]) -> Self {
         let len = colors.len();
         let mut l = Vec::with_capacity(len);

@@ -7,14 +7,21 @@ use crate::lzw::LzwEncoder;
 use image::GenericImageView;
 use std::path::PathBuf;
 
+/// Options for configuring the sequence optimization.
 pub struct OptimizationOptions {
+    /// Number of K-Means iterations.
     pub quality: usize,
+    /// Frames per second for the output GIF.
     pub fps: f32,
+    /// Type of dithering to apply.
     pub dither: DitherType,
+    /// LZW lossiness level (0-20).
     pub lossy: u8,
+    /// Perceptual transparency threshold.
     pub fuzz: u32,
 }
 
+/// Optimizes a sequence of images into a single GIF buffer.
 pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> Result<Vec<u8>> {
     let delay = (100.0 / options.fps).floor() as u16;
     
@@ -80,10 +87,19 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
                 DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette),
                 DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette),
                 DitherType::None => {
-                    use rayon::prelude::*;
-                    curr_pixels.par_iter()
-                        .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                        .collect()
+                    #[cfg(feature = "rayon")]
+                    {
+                        use rayon::prelude::*;
+                        curr_pixels.par_iter()
+                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                            .collect()
+                    }
+                    #[cfg(not(feature = "rayon"))]
+                    {
+                        curr_pixels.iter()
+                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                            .collect()
+                    }
                 }
             };
             writer.write_image_data(0, 0, width as u16, height as u16, 8, &indices, &mut lzw_encoder)?;

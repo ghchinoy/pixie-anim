@@ -1,9 +1,15 @@
+//! Color space conversions and perceptual distance.
+
 use crate::quant::Rgb;
 
+/// Represents a color in the CIELAB color space.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Lab {
+    /// Luminance (0.0 to 100.0)
     pub l: f32,
+    /// Green-Red component (-128.0 to 127.0)
     pub a: f32,
+    /// Blue-Yellow component (-128.0 to 127.0)
     pub b: f32,
 }
 
@@ -42,6 +48,7 @@ pub fn rgb_to_lab(r: u8, g: u8, b: u8) -> Lab {
     }
 }
 
+/// Calculates the squared Euclidean distance between two Lab colors.
 pub fn lab_distance_sq(c1: Lab, c2: Lab) -> f32 {
     let dl = c1.l - c2.l;
     let da = c1.a - c2.a;

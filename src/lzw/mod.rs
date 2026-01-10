@@ -7,13 +7,16 @@ use crate::error::Result;
 
 const MAX_CODES: u16 = 4096;
 
+/// A Lempel-Ziv-Welch encoder specialized for GIF89a.
 pub struct LzwEncoder {
     min_code_size: u8,
     dictionary: Vec<i32>,
-    pub lossiness: u8, // 0 = lossless, >0 = allow neighbor matching
+    /// Degree of lossiness (0 = lossless, >0 = allow neighbor matching).
+    pub lossiness: u8,
 }
 
 impl LzwEncoder {
+    /// Creates a new LzwEncoder with the specified minimum code size.
     pub fn new(min_code_size: u8) -> Self {
         Self { 
             min_code_size,
@@ -22,7 +25,7 @@ impl LzwEncoder {
         }
     }
 
-    /// Compresses a stream of palette indices.
+    /// Compresses a stream of palette indices into the provided buffer.
     pub fn encode(&mut self, data: &[u8], buffer: &mut Vec<u8>) -> Result<()> {
         let clear_code = 1 << self.min_code_size;
         let eoi_code = clear_code + 1;

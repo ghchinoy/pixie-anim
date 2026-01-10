@@ -2,12 +2,18 @@
 
 use crate::quant::{Rgb, DitherType};
 
+/// Represents the difference between two consecutive frames.
 #[derive(Debug, Default)]
 pub struct FrameDelta {
+    /// X coordinate of the delta bounding box.
     pub x: u16,
+    /// Y coordinate of the delta bounding box.
     pub y: u16,
+    /// Width of the delta bounding box.
     pub width: u16,
+    /// Height of the delta bounding box.
     pub height: u16,
+    /// Palette indices for the pixels within the bounding box.
     pub indices: Vec<u8>,
 }
 
@@ -22,6 +28,16 @@ fn rgb_dist_sq(c1: Rgb, c2: Rgb) -> u32 {
 
 /// Finds the smallest bounding box and maps pixels to transparent if they are "close enough"
 /// to the previous frame's color.
+/// 
+/// # Arguments
+/// * `width` - Frame width
+/// * `height` - Frame height
+/// * `curr_pixels` - Pixels of the current frame
+/// * `prev_pixels` - Pixels of the previous frame
+/// * `palette` - The global color palette
+/// * `transparent_idx` - The index reserved for transparency
+/// * `fuzz_threshold` - Squared distance threshold for "fuzzy" equality
+/// * `dither` - The dithering algorithm to apply to changed pixels
 pub fn find_delta_fuzzy(
     width: u16, 
     height: u16, 
@@ -29,7 +45,7 @@ pub fn find_delta_fuzzy(
     prev_pixels: &[Rgb],
     palette: &[Rgb],
     transparent_idx: u8,
-    fuzz_threshold: u32, // Squared distance threshold
+    fuzz_threshold: u32,
     dither: DitherType,
 ) -> Option<FrameDelta> {
     if curr_pixels.len() != prev_pixels.len() { return None; }

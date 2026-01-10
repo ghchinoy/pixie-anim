@@ -1,13 +1,22 @@
+//! Error handling.
+
 use std::fmt;
 
+/// Result type for Pixie-Anim operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Error types for Pixie-Anim.
 #[derive(Debug)]
 pub enum Error {
+    /// Standard IO error.
     Io(std::io::Error),
+    /// Error related to GIF structure.
     InvalidGif(String),
+    /// Error during LZW encoding.
     LzwError(String),
+    /// Error during color quantization.
     QuantizationError(String),
+    /// Internal or unexpected error.
     Internal(String),
 }
 
