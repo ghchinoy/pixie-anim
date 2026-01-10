@@ -254,3 +254,25 @@ Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
 
 ---
 
+## Benchmark: space_waves (2026-01-10 16:20:20.635965 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.877 | 9821.73 | 4.0 |
+| Gifsicle | 2.115 | 19034.63 | 6.0 |
+| FFmpeg | 3.051 | 19290.80 | 6.0 |
+| gifski | 1.705 | 13589.32 | 6.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization is heavily impacted by the limitations of the GIF format, particularly given the complexity of the cosmic source material. There is excessive dithering across the entire frame, which transforms the smooth, gaseous textures of the original nebula into a grainy, noisy pattern. Color fidelity is significantly reduced, leading to visible banding in the dark gradients of space. Fine details, such as smaller stars and the delicate 'foam' on the wave crests, are largely lost or obscured by the dither noise.
+
+**Gifsicle**: The optimization suffers significantly due to the inherent limitations of the GIF format when handling complex, high-dynamic-range scenes. The smooth gradients of the space nebula and the iridescent waves are replaced with heavy dithering patterns to compensate for the 256-color palette. This results in a persistent 'grainy' texture across the entire image, which obscures the fine detail of the star field and the silky texture of the waves seen in the original.
+
+**FFmpeg**: The optimization shows clear signs of the GIF format's technical limitations when handling complex, high-dynamic-range cosmic scenes. The original's smooth gradients in the nebulae are replaced by noticeable dithering patterns used to approximate the color palette, which introduces a pervasive graininess. While the high-contrast elements remain legible, the 'painterly' texture of the waves is lost to noise, and fine star details are slightly blurred or absorbed by the dither pattern.
+
+**gifski**: The optimized GIF shows significant graininess due to heavy dithering, which is used to compensate for the 256-color limit in a scene with complex gradients and high-frequency star detail. While it avoids harsh banding, the fine details of the starfield and the nebular textures are noticeably degraded and blurred.
+
+
+---
+
