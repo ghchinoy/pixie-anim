@@ -10,7 +10,14 @@ We use AI-generated video as synthetic benchmarks to test the performance and co
 
 Large media files are generated via **Veo 3.1 Fast** and stored in `tests/fixtures/synthetic/`. These files are ignored by git to maintain repository health.
 
-**How to generate the 'cyberpunk_drone' benchmark:**
+**How to generate and test a new benchmark (Automated):**
+1. Generate a video using `veo_t2v` and save to `tests/fixtures/synthetic/my_video.mp4`.
+2. Run the E2E test script which handles extraction and benchmarking:
+   ```bash
+   ./tests/run_e2e_test.sh tests/fixtures/synthetic/my_video.mp4 my_test_name
+   ```
+
+**How to generate the 'cyberpunk_drone' benchmark (Manual):**
 1. Use the `veo_t2v` tool from the [Vertex AI GenMedia MCP Servers](https://github.com/GoogleCloudPlatform/vertex-ai-creative-studio/tree/main/experiments/mcp-genmedia) with the following parameters:
    - **Prompt**: "A fast-paced drone shot through a neon-lit cyberpunk city with heavy rain and flickering lights."
    - **Model**: `veo-3.1-fast-generate-preview`

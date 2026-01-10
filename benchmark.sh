@@ -11,6 +11,15 @@ fi
 FRAME_DIR=$1
 ORIGINAL_VIDEO=$2
 NAME=$3
+
+# Binary Checks
+for cmd in ffmpeg gifsicle gifski bc; do
+    if ! command -v $cmd &> /dev/null; then
+        echo "❌ Error: $cmd is not installed. Please install it to run benchmarks."
+        exit 1
+    fi
+done
+
 PIXIE_OUT="tests/fixtures/synthetic/${NAME}_pixie.gif"
 BASELINE_OUT="tests/fixtures/synthetic/${NAME}_baseline.gif"
 GIFSICLE_OUT="tests/fixtures/synthetic/${NAME}_gifsicle.gif"
@@ -26,9 +35,9 @@ fi
 echo "--- 🏃 Starting Macro Benchmark: $NAME ---"
 
 # 1. Run Pixie-Anim
-echo "[1/4] Running Pixie-Anim (Dithered)..."
+echo "[1/4] Running Pixie-Anim (Dithered, Lossy)..."
 START=$(date +%s%N)
-cargo run --release --features="cli" --bin pixie-anim -- $FRAME_DIR/*.png --fps 15 --dither --output $PIXIE_OUT > /dev/null 2>&1
+cargo run --release --features="cli" --bin pixie-anim -- $FRAME_DIR/*.png --fps 15 --dither --lossy 8 --output $PIXIE_OUT > /dev/null 2>&1
 END=$(date +%s%N)
 PIXIE_TIME=$(echo "scale=3; ($END - $START) / 1000000000" | bc)
 

@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     
     let start = Instant::now();
-    let delay = (100.0 / cli.fps).round() as u16;
+    let delay = (100.0 / cli.fps).floor() as u16;
     
     println!("🚀 Target FPS: {} (Delay: {}ms)", cli.fps, delay * 10);
 

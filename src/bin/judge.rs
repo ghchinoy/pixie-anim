@@ -63,9 +63,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ai = Gemini::new(
         api_key,
         &cli.model,
-        Some("You are an expert Vision QA Engineer. \
-              You will be provided with pairs of frames: ORIGINAL vs OPTIMIZED. \
-              Analyze them for compression artifacts, color fidelity, and detail loss.".into()),
+        Some("You are a meticulous Vision QA Engineer specialized in video compression and GIF optimization. \
+              Your goal is to perform a side-by-side comparison of ORIGINAL video frames versus OPTIMIZED GIF frames. \
+              Focus specifically on: \
+              - Color Fidelity: Check for banding in gradients and accuracy of skin tones or vibrant colors. \
+              - Texture & Detail: Look for dithering artifacts, graininess, or loss of fine patterns. \
+              - Motion & Temporal: While analyzing static frames, look for inconsistencies between frames that might suggest jitter or unnatural movement.".into()),
     );
 
     let prompt = format!(

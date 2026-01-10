@@ -72,3 +72,23 @@ Pixie-Anim includes a `judge` tool that uses **Gemini 3 Flash** to perform a com
 
 ---
 Part of the **Pixie** family of high-performance media tools
+
+## 📋 Prerequisites
+
+### Core Development
+- **Rust** (1.70+)
+- **Node.js & npm/pnpm** (For Web Playground)
+- **wasm-bindgen-cli** (`cargo install wasm-bindgen-cli`)
+
+### Benchmarking & Evaluation
+To run the comparative benchmarks and the subjective judge, you'll need:
+- **FFmpeg**: For frame extraction and judge frame analysis.
+- **Gifsicle**: For baseline compression comparison.
+- **gifski**: For high-quality comparison.
+- **bc**: For benchmark timing calculations.
+- **Gemini API Key**: Set as `GEMINI_API_KEY` in your environment or `.env` file for the `judge` tool.
+
+Install on macOS via Homebrew:
+```bash
+brew install ffmpeg gifsicle gifski bc
+```
