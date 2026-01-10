@@ -70,6 +70,9 @@ The web UI is a Lit-based application that leverages the Rust core via WASM.
 ## 👁️ Automated Evaluation
 Pixie-Anim includes a `judge` tool that uses **Gemini 3 Flash** to perform a comparative analysis of the output, identifying artifacts like banding or temporal jitter that traditional metrics (PSNR/SSIM) might miss.
 
+## 📖 Resources
+- **Deep Dive**: [Optimizing GIFs with Pixo: Extending Lessons Learned](https://ghc.wtf/writing/optimizing-gifs-with-pixo-extending-lessons-learned/) - A technical writeup on the architecture and philosophy behind Pixie-Anim.
+
 ---
 Part of the **Pixie** family of high-performance media tools
 
