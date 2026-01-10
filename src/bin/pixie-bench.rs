@@ -14,6 +14,10 @@ struct Cli {
     #[arg(short, long)]
     input: PathBuf,
 
+    /// Original video for evaluation (optional if input is a video)
+    #[arg(short, long)]
+    original: Option<PathBuf>,
+
     /// Test name for reporting
     #[arg(short, long)]
     name: String,
@@ -22,6 +26,10 @@ struct Cli {
     #[arg(short, long)]
     report: Option<PathBuf>,
 
+    /// Quality (iterations for K-Means, default 5)
+    #[arg(short, long, default_value = "5")]
+    quality: usize,
+
     /// LZW Lossiness (0-20)
     #[arg(short, long, default_value = "0")]
     lossy: u8,
@@ -29,6 +37,10 @@ struct Cli {
     /// Perceptual transparency threshold (0-100)
     #[arg(short, long, default_value = "5")]
     fuzz: u32,
+
+    /// Disable Floyd-Steinberg dithering
+    #[arg(long)]
+    no_dither: bool,
 
     /// Cleanup frames after benchmark
     #[arg(long)]
@@ -94,14 +106,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cli.input.clone()
     };
 
-    let original_video = if is_video {
+    let original_video = if let Some(orig) = cli.original {
+        orig
+    } else if !cli.input.is_dir() {
         cli.input.clone()
     } else {
-        // If frames provided, we don't have the original video for judging
-        // For now, we'll assume we need a video for the judge to work properly
-        eprintln!("⚠️  Warning: Judging requires an original video file. Skipping evaluation if input is a directory.");
         PathBuf::new()
     };
+
+    if original_video.as_os_str().is_empty() {
+        eprintln!("⚠️  Warning: Judging requires an original video file. Skipping evaluation.");
+    }
 
     let mut frame_paths: Vec<PathBuf> = fs::read_dir(&frame_dir)?
         .filter_map(|res| res.ok())
@@ -117,9 +132,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Pixie-Anim (Internal)
     println!("[1/4] Running Pixie-Anim (Internal)...");
     let options = OptimizationOptions {
-        quality: 5,
+        quality: cli.quality,
         fps: 15.0,
-        dither: true,
+        dither: !cli.no_dither,
         lossy: cli.lossy,
         fuzz: cli.fuzz,
     };
@@ -135,7 +150,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         size_kb: buffer.len() as f64 / 1024.0,
         score: 0.0,
         reasoning: String::new(),
-        output_path: output_path.clone(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &output_path).await?;
@@ -171,7 +185,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         size_kb: fs::metadata(&gifsicle_path)?.len() as f64 / 1024.0,
         score: 0.0,
         reasoning: String::new(),
-        output_path: gifsicle_path.clone(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &gifsicle_path).await?;
@@ -201,7 +214,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         size_kb: fs::metadata(&ffmpeg_path)?.len() as f64 / 1024.0,
         score: 0.0,
         reasoning: String::new(),
-        output_path: ffmpeg_path.clone(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &ffmpeg_path).await?;
@@ -214,13 +226,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[4/4] Running gifski...");
     let gifski_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_gifski.gif", cli.name));
     let start = Instant::now();
-    Command::new("gifski").args(&[
-        "-o", gifski_path.to_str().unwrap(),
-        &format!("{}/*.png", frame_dir.to_str().unwrap())
-    ]).output()?;
-    // Note: gifski might fail if it doesn't like the wildcard expanded by shell
-    // In Rust Command, wildcard is not expanded automatically. 
-    // Let's pass all frame paths instead.
+    
     let mut gifski_args = vec!["-o".to_string(), gifski_path.to_str().unwrap().to_string()];
     for p in &frame_paths {
         gifski_args.push(p.to_str().unwrap().to_string());
@@ -235,7 +241,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         size_kb: fs::metadata(&gifski_path)?.len() as f64 / 1024.0,
         score: 0.0,
         reasoning: String::new(),
-        output_path: gifski_path.clone(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &gifski_path).await?;

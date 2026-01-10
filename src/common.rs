@@ -20,13 +20,14 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
     
     // 1. Sampling for palette
     let mut sampled_pixels = Vec::new();
-    let sample_every = (inputs.len() / 10).max(1);
+    let sample_every = (inputs.len() / 20).max(1); // Sample up to 20 frames
     
     for (i, input_path) in inputs.iter().enumerate() {
         if i % sample_every == 0 {
             let img = image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
             let rgb = img.to_rgb8();
-            for p in rgb.pixels().step_by(100) {
+            // Sample every 20th pixel (5%) instead of every 100th
+            for p in rgb.pixels().step_by(20) {
                 sampled_pixels.push(Rgb { r: p[0], g: p[1], b: p[2] });
             }
         }

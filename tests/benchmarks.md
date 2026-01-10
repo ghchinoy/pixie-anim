@@ -34,3 +34,157 @@ Compression Improvement (Pixie vs Gifsicle): 50.0%
 
 ---
 
+## Benchmark: cat_q20 (2026-01-10 13:38:31.960354 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.692 | 11180.04 | 0.0 |
+| Gifsicle | 2.460 | 21849.95 | 0.0 |
+| FFmpeg | 2.448 | 21911.65 | 0.0 |
+| gifski | 1.526 | 14832.96 | 0.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: 
+
+**Gifsicle**: 
+
+**FFmpeg**: 
+
+**gifski**: 
+
+
+---
+
+## Benchmark: cat_no_dither (2026-01-10 13:38:42.250291 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.476 | 11160.28 | 0.0 |
+| Gifsicle | 2.385 | 21849.95 | 0.0 |
+| FFmpeg | 2.380 | 21911.65 | 0.0 |
+| gifski | 1.619 | 14832.96 | 0.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: 
+
+**Gifsicle**: 
+
+**FFmpeg**: 
+
+**gifski**: 
+
+
+---
+
+## Benchmark: cat_q20_judged (2026-01-10 13:39:46.436892 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.572 | 11180.04 | 4.0 |
+| Gifsicle | 2.339 | 21849.95 | 6.0 |
+| FFmpeg | 2.824 | 21911.65 | 6.0 |
+| gifski | 1.555 | 14832.96 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization suffers significantly from the 256-color limitation inherent to the GIF format. The most prominent issue is the heavy dithering throughout the aurora borealis and the night sky, which replaces smooth gradients with a grainy, speckled texture. There is also noticeable color banding around the moon and in the transitions of the green and purple light. The fine texture of the cat's fur has lost its softness, appearing much coarser and more pixelated compared to the original video.
+
+**Gifsicle**: The conversion to GIF has introduced significant color banding and posterization in the smooth gradients of the aurora borealis and the night sky. The 256-color palette limitation is very apparent, resulting in a loss of depth. Heavy dithering is visible in the sky and on the snow's surface to compensate for the lack of colors, which degrades the overall texture quality.
+
+**FFmpeg**: The optimized GIF suffers from noticeable color banding, particularly within the smooth gradients of the aurora borealis and the night sky. Dithering is used extensively to manage the limited color palette, which creates a grainy texture in the darker regions and on the cat's fur. However, the temporal consistency between frames appears stable, and the overall scene remains clear and recognizable.
+
+**gifski**: The optimized GIF shows significant dithering artifacts, particularly in the smooth gradients of the aurora borealis and the night sky, which is a common limitation of the 256-color GIF format. While the overall color representation is preserved, the fine texture of the cat's fur and the soft luminance of the snow are noticeably noisier and less detailed than the original. Temporal consistency appears stable across the three frames, though the dithering pattern creates a graininess not present in the source.
+
+
+---
+
+## Benchmark: cat_no_dither_judged (2026-01-10 13:40:24.361963 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.568 | 11160.28 | 5.0 |
+| Gifsicle | 2.336 | 21849.95 | 7.0 |
+| FFmpeg | 2.386 | 21911.65 | 6.0 |
+| gifski | 1.529 | 14832.96 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The conversion to GIF has resulted in significant quality loss, primarily due to the limited color palette. The smooth gradients of the aurora borealis in the original frames are replaced by heavy dithering and noticeable color banding in the optimized versions. There is a substantial loss of fine detail in the cat's fur and the texture of the snow, which now appear grainy and noisy.
+
+**Gifsicle**: The optimized GIF shows significant dithering artifacts in the gradients of the Aurora Borealis and the dark night sky. This is a common limitation of the 256-color palette in GIFs. However, the detail on the cat's fur and the foreground snow remains relatively sharp and well-preserved.
+
+**FFmpeg**: The optimization process has introduced significant dithering and color banding, particularly in the aurora borealis and night sky gradients. This is a common limitation of the GIF format's 256-color palette when handling complex, high-contrast scenes. Fine texture in the snow and the cat's fur has been softened or replaced by dither patterns, leading to a loss of detail. The starfield appears noisier due to these artifacts.
+
+**gifski**: The optimized GIF shows noticeable dithering artifacts, particularly in the smooth gradients of the aurora borealis and the glow around the moon. This is a result of the 256-color limitation inherent to the GIF format. While the cat's fur and the structural details of the trees remain well-preserved, the fine texture of the snow in the foreground appears noisier due to the quantization process.
+
+
+---
+
+## Benchmark: cat_hillclimb_v2 (2026-01-10 13:42:42.886513 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.726 | 10615.46 | 6.0 |
+| Gifsicle | 2.295 | 21849.95 | 5.0 |
+| FFmpeg | 2.874 | 21911.65 | 6.0 |
+| gifski | 1.692 | 14832.96 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization shows significant quality degradation due to the GIF's 256-color limitation. The smooth gradients of the aurora borealis are replaced with heavy, visible dithering patterns to prevent banding. Similarly, the soft texture of the snow is lost to a grainy dithered appearance. While the subject (the cat) maintains decent edge clarity, the overall image feels noisy and lacks the high-fidelity depth of the original.
+
+**Gifsicle**: The optimization process has introduced significant color banding in the gradients of the aurora borealis, which is a common limitation of the 8-bit color palette in GIFs. Heavy dithering is visible across the night sky and the shadowed regions of the snow, creating a grainy texture. Fine details in the cat's fur and the sharpness of the stars are noticeably reduced compared to the original video frames.
+
+**FFmpeg**: The optimized GIF suffers from significant dithering artifacts throughout the sky and aurora borealis gradients, which is a common limitation of the 256-color GIF palette. The smooth transitions of the original video are replaced with visible stippling/noise. While the cat's texture is relatively well-preserved, the snowy landscape loses some micro-detail and develops a grainy appearance. Temporal consistency is likely compromised as the dither patterns appear to shift between frames, which usually results in a 'shimmering' effect in dark areas during playback.
+
+**gifski**: The optimized GIF handles the complex lighting of the Aurora Borealis reasonably well, but the 8-bit palette limitation is evident. Significant dithering is visible in the sky's gradients to prevent harsh color banding, resulting in a grainy texture throughout the upper half of the frame. Fine details in the cat's fur and the pine needles are slightly muddied compared to the original video frames.
+
+
+---
+
+## Benchmark: cat_hillclimb_v3 (2026-01-10 13:45:18.406094 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.920 | 10612.12 | 6.0 |
+| Gifsicle | 2.335 | 21849.95 | 5.0 |
+| FFmpeg | 2.761 | 21911.65 | 6.0 |
+| gifski | 1.626 | 14832.96 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization shows significant artifacts typical of GIF's 256-color limitation. The complex gradients of the aurora borealis result in heavy dithering, which creates a grainy appearance across the sky. The fine texture of the cat's fur is noticeably simplified, and the smooth shadows on the snow have been replaced with stippled patterns. However, the overall composition and contrast remain intact.
+
+**Gifsicle**: The optimization suffers significantly from the limitations of the GIF format's color palette. The smooth, complex gradients of the aurora borealis and the night sky exhibit heavy dithering and noticeable color banding. While the cat's silhouette and main textures are preserved, the atmospheric depth of the original is lost due to the grainy dither pattern applied across the frame.
+
+**FFmpeg**: The transition to a limited color palette for the GIF format has caused significant degradation in the sky and aurora. High-contrast gradients in the aurora borealis exhibit heavy dithering and visible color banding. While the cat's silhouette and large patterns are preserved, fine texture in the fur and the crispness of the stars are lost due to compression and palette optimization.
+
+**gifski**: The optimized GIF performs reasonably well given the complexity of the scene (high-contrast stars and smooth aurora gradients). However, there is heavy dithering throughout the sky to compensate for the limited color palette, which replaces smooth transitions with a grainy texture. Fine details in the cat's fur and the snow's surface are softened compared to the original.
+
+
+---
+
+## Benchmark: cat_hillclimb_v4_lossless (2026-01-10 13:49:19.340352 -07:00)
+Input: "tests/fixtures/synthetic/rust_cat_test_frames/"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.576 | 15097.36 | 6.0 |
+| Gifsicle | 2.237 | 21849.95 | 6.0 |
+| FFmpeg | 2.391 | 21911.65 | 7.0 |
+| gifski | 1.582 | 14832.96 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimized GIF suffers from significant dithering and graininess, which is highly visible in the smooth gradients of the aurora borealis and the dark sky. This is a result of the 256-color palette limitation. While the main subject (the cat) retains its shape and basic texture, the fine details of the fur and the soft snow on the trees have been replaced by noise. The stars have also become less distinct due to the heavy dither patterns.
+
+**Gifsicle**: The optimization process to GIF format has significantly impacted the image quality. The most prominent issue is the heavy dithering used to compensate for the 256-color palette, which creates a grainy texture across the entire image. This is particularly noticeable in the sky and on the cat's fur. Additionally, the smooth color gradients of the aurora borealis now exhibit visible banding and 'noisy' transitions compared to the original video frames.
+
+**FFmpeg**: The conversion to GIF introduces noticeable dithering patterns in the sky and aurora borealis to compensate for the limited color palette. While the spatial consistency between frames is good, the smooth gradients of the original are replaced by graininess. There is a slight loss of fine texture in the cat's fur and the shadows on the snow.
+
+**gifski**: The optimized GIF shows noticeable color banding in the complex gradients of the aurora borealis and the night sky, a common limitation of the 256-color GIF palette. Heavy dithering is visible in the foreground snow and shadowed areas to compensate for color loss. While the cat's fur texture is relatively well-preserved, there is a loss of fine-grain detail in the starry background and the softer edges of the clouds.
+
+
+---
+

@@ -1,62 +1,66 @@
-//! Floyd-Steinberg Dithering.
+//! Perceptual Floyd-Steinberg Dithering.
 
 use crate::quant::Rgb;
-use crate::simd::find_nearest_color;
+use crate::simd::{find_nearest_color_lab, PlanarLabPalette};
+use crate::color::{rgb_to_lab, Lab};
 
-/// Applies Floyd-Steinberg dithering to a frame.
+/// Applies perceptual Floyd-Steinberg dithering to a frame.
 /// 
-/// Error diffusion weights:
-///       *   7/16
-/// 3/16  5/16  1/16
+/// Uses CIELAB color space for distance matching and reduces 
+/// error strength to 75% to prevent "grainy" artifacts.
 pub fn dither_frame(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
     
-    // Error buffers (storing errors as i16 to avoid overflow and handle negatives)
-    // We need 3 channels (R, G, B)
-    let mut error_buf = vec![0i16; w * h * 3];
+    // 1. Prepare Perceptual Palette
+    let lab_palette: Vec<Lab> = palette.iter()
+        .map(|p| rgb_to_lab(p.r, p.g, p.b))
+        .collect();
+    let planar_palette = PlanarLabPalette::from_lab(&lab_palette);
+    
+    // Error buffers (storing errors as f32 for Lab space precision)
+    let mut error_buf_l = vec![0.0f32; w * h];
+    let mut error_buf_a = vec![0.0f32; w * h];
+    let mut error_buf_b = vec![0.0f32; w * h];
+    
+    // Dither Strength (75%)
+    let strength = 0.75f32;
     
     for y in 0..h {
         for x in 0..w {
             let idx = y * w + x;
-            let err_idx = idx * 3;
             
-            // 1. Get original pixel + accumulated error
-            let r = (pixels[idx].r as i16 + error_buf[err_idx]).clamp(0, 255) as u8;
-            let g = (pixels[idx].g as i16 + error_buf[err_idx + 1]).clamp(0, 255) as u8;
-            let b = (pixels[idx].b as i16 + error_buf[err_idx + 2]).clamp(0, 255) as u8;
+            // 2. Get original pixel + accumulated error in Lab space
+            let original_lab = rgb_to_lab(pixels[idx].r, pixels[idx].g, pixels[idx].b);
+            let current_lab = Lab {
+                l: (original_lab.l + error_buf_l[idx]).clamp(0.0, 100.0),
+                a: (original_lab.a + error_buf_a[idx]).clamp(-128.0, 127.0),
+                b: (original_lab.b + error_buf_b[idx]).clamp(-128.0, 127.0),
+            };
             
-            let current_rgb = Rgb { r, g, b };
-            
-            // 2. Find nearest color in palette
-            let color_idx = find_nearest_color(current_rgb, palette);
+            // 3. Find nearest color in Lab palette
+            let color_idx = find_nearest_color_lab(current_lab, &planar_palette);
             indices[idx] = color_idx as u8;
             
-            let best_color = palette[color_idx];
+            let best_color_lab = lab_palette[color_idx];
             
-            // 3. Calculate error
-            let err_r = r as i16 - best_color.r as i16;
-            let err_g = g as i16 - best_color.g as i16;
-            let err_b = b as i16 - best_color.b as i16;
+            // 4. Calculate error (difference between perceptual current and best match)
+            let err_l = (current_lab.l - best_color_lab.l) * strength;
+            let err_a = (current_lab.a - best_color_lab.a) * strength;
+            let err_b = (current_lab.b - best_color_lab.b) * strength;
             
-            // 4. Diffuse error to neighbors
-            // Neighbor weights:
-            // (x+1, y)   : 7/16
-            // (x-1, y+1) : 3/16
-            // (x, y+1)   : 5/16
-            // (x+1, y+1) : 1/16
-            
+            // 5. Diffuse error to neighbors
             if x + 1 < w {
-                diffuse(w, &mut error_buf, x + 1, y, err_r, err_g, err_b, 7);
+                diffuse(w, &mut error_buf_l, &mut error_buf_a, &mut error_buf_b, x + 1, y, err_l, err_a, err_b, 7.0/16.0);
             }
             if y + 1 < h {
                 if x > 0 {
-                    diffuse(w, &mut error_buf, x - 1, y + 1, err_r, err_g, err_b, 3);
+                    diffuse(w, &mut error_buf_l, &mut error_buf_a, &mut error_buf_b, x - 1, y + 1, err_l, err_a, err_b, 3.0/16.0);
                 }
-                diffuse(w, &mut error_buf, x, y + 1, err_r, err_g, err_b, 5);
+                diffuse(w, &mut error_buf_l, &mut error_buf_a, &mut error_buf_b, x, y + 1, err_l, err_a, err_b, 5.0/16.0);
                 if x + 1 < w {
-                    diffuse(w, &mut error_buf, x + 1, y + 1, err_r, err_g, err_b, 1);
+                    diffuse(w, &mut error_buf_l, &mut error_buf_a, &mut error_buf_b, x + 1, y + 1, err_l, err_a, err_b, 1.0/16.0);
                 }
             }
         }
@@ -66,9 +70,15 @@ pub fn dither_frame(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) ->
 }
 
 #[inline]
-fn diffuse(w: usize, buf: &mut [i16], x: usize, y: usize, er: i16, eg: i16, eb: i16, weight: i16) {
-    let idx = (y * w + x) * 3;
-    buf[idx] += (er * weight) / 16;
-    buf[idx + 1] += (eg * weight) / 16;
-    buf[idx + 2] += (eb * weight) / 16;
+fn diffuse(
+    w: usize, 
+    buf_l: &mut [f32], buf_a: &mut [f32], buf_b: &mut [f32], 
+    x: usize, y: usize, 
+    el: f32, ea: f32, eb: f32, 
+    weight: f32
+) {
+    let idx = y * w + x;
+    buf_l[idx] += el * weight;
+    buf_a[idx] += ea * weight;
+    buf_b[idx] += eb * weight;
 }

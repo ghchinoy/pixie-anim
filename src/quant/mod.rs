@@ -44,6 +44,50 @@ impl KMeansQuantizer {
             dither: true,
         }
     }
+
+    fn distance_sq(c1: crate::color::Lab, c2: crate::color::Lab) -> f32 {
+        crate::color::lab_distance_sq(c1, c2)
+    }
+
+    /// K-Means++ initialization for Lab centroids
+    fn initialize_centroids(pixels: &[crate::color::Lab], max_colors: usize) -> Vec<crate::color::Lab> {
+        if pixels.is_empty() { return Vec::new(); }
+        
+        let mut centroids = Vec::with_capacity(max_colors);
+        // Start with a random pixel (or just the first one for stability in testing)
+        centroids.push(pixels[0]);
+        
+        let mut min_distances = vec![f32::MAX; pixels.len()];
+
+        while centroids.len() < max_colors {
+            let last_centroid = centroids.last().unwrap();
+            let mut total_dist: f64 = 0.0;
+
+            for (i, &pixel) in pixels.iter().enumerate() {
+                let dist = Self::distance_sq(pixel, *last_centroid);
+                if dist < min_distances[i] {
+                    min_distances[i] = dist;
+                }
+                total_dist += min_distances[i] as f64;
+            }
+
+            if total_dist == 0.0 { break; }
+
+            // Pick the next centroid based on weighted probability
+            // For P0, we'll pick the point furthest from all current centroids
+            let mut best_pixel_idx = 0;
+            let mut max_d = -1.0;
+            for (i, &d) in min_distances.iter().enumerate() {
+                if d > max_d {
+                    max_d = d;
+                    best_pixel_idx = i;
+                }
+            }
+            centroids.push(pixels[best_pixel_idx]);
+        }
+        
+        centroids
+    }
 }
 
 impl Quantizer for KMeansQuantizer {
@@ -62,12 +106,7 @@ impl Quantizer for KMeansQuantizer {
             .collect();
 
         // 2. Initialize centroids using K-Means++ logic on sampled Lab pixels
-        let mut centroids: Vec<crate::color::Lab> = sampled_pixels
-            .iter()
-            .step_by((sampled_pixels.len() / max_colors).max(1))
-            .take(max_colors)
-            .cloned()
-            .collect();
+        let mut centroids = Self::initialize_centroids(&sampled_pixels, max_colors);
 
         let mut assignments = vec![0usize; sampled_pixels.len()];
 
