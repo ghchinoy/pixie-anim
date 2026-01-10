@@ -61,8 +61,7 @@ pub fn find_delta_fuzzy(
     let delta_width = max_x - min_x + 1;
     let delta_height = max_y - min_y + 1;
 
-    // 2. Map pixels to indices (Parallelized via Rayon)
-    use rayon::prelude::*;
+    // 2. Map pixels to indices
     
     // Prepare Blue Noise if needed
     let lab_palette = if dither == DitherType::BlueNoise {
@@ -75,12 +74,46 @@ pub fn find_delta_fuzzy(
         None
     };
 
+    #[cfg(feature = "rayon")]
+    use rayon::prelude::*;
+
+    #[cfg(feature = "rayon")]
     let delta_indices: Vec<u8> = (min_y..=max_y).into_par_iter()
         .flat_map(|y| {
             let lab_palette_ref = lab_palette.as_ref();
             (min_x..=max_x).into_par_iter().map(move |x| {
                 let idx = (y as usize * width as usize) + x as usize;
                 // If it's close enough to the previous pixel, make it transparent
+                if rgb_dist_sq(curr_pixels[idx], prev_pixels[idx]) <= fuzz_threshold {
+                    transparent_idx
+                } else {
+                    match dither {
+                        DitherType::BlueNoise => {
+                            if let Some((_, pp)) = lab_palette_ref {
+                                let (ol, oa, ob) = crate::quant::dither::get_blue_noise_offset(x, y);
+                                let p = curr_pixels[idx];
+                                let mut lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
+                                lab.l = (lab.l + ol).clamp(0.0, 100.0);
+                                lab.a = (lab.a + oa).clamp(-128.0, 127.0);
+                                lab.b = (lab.b + ob).clamp(-128.0, 127.0);
+                                crate::simd::find_nearest_color_lab(lab, pp) as u8
+                            } else {
+                                crate::simd::find_nearest_color(curr_pixels[idx], palette) as u8
+                            }
+                        },
+                        _ => crate::simd::find_nearest_color(curr_pixels[idx], palette) as u8
+                    }
+                }
+            })
+        })
+        .collect();
+
+    #[cfg(not(feature = "rayon"))]
+    let delta_indices: Vec<u8> = (min_y..=max_y)
+        .flat_map(|y| {
+            let lab_palette_ref = lab_palette.as_ref();
+            (min_x..=max_x).map(move |x| {
+                let idx = (y as usize * width as usize) + x as usize;
                 if rgb_dist_sq(curr_pixels[idx], prev_pixels[idx]) <= fuzz_threshold {
                     transparent_idx
                 } else {

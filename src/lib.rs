@@ -11,15 +11,13 @@ pub mod error;
 pub mod gif;
 pub mod lzw;
 pub mod quant;
+pub mod simd;
 
 #[cfg(feature = "cli")]
 pub mod common;
 
 #[cfg(feature = "cli")]
 pub mod evaluation;
-
-#[cfg(feature = "simd")]
-pub mod simd;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

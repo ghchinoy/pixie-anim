@@ -1,5 +1,6 @@
 use clap::Parser;
-use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence, DitherType};
+use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
+use pixie_anim_lib::quant::DitherType;
 use pixie_anim_lib::evaluation::Judge;
 use std::path::{Path, PathBuf};
 use std::process::Command;

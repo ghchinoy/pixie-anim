@@ -276,3 +276,25 @@ Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.
 
 ---
 
+## Benchmark: space_waves_regression (2026-01-10 16:25:26.541450 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 1.997 | 9821.73 | 6.0 |
+| Gifsicle | 2.250 | 19034.63 | 6.0 |
+| FFmpeg | 3.207 | 19290.80 | 6.0 |
+| gifski | 1.736 | 13589.32 | 7.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization struggles with the high-complexity gradients of the cosmic scene. The GIF's 256-color limitation leads to significant dithering across the wave surfaces and noticeable banding in the nebular clouds. While the overall structure is preserved, the fine crystalline texture of the water and the pinpoint sharpness of the stars are compromised.
+
+**Gifsicle**: The optimization suffers significantly from the limited GIF color palette. The original features complex gradients in both the cosmic background and the iridescent waves, which are represented in the optimized version using aggressive dithering. This leads to a substantial loss of fine detail and the introduction of a pervasive grainy texture. While the general composition and vibrant colors are maintained, the clarity of the celestial bodies and the smooth transitions of the water's surface are degraded.
+
+**FFmpeg**: The conversion from original video to optimized GIF introduces significant texture changes. While the overall color vibrancy is maintained through a well-distributed palette, the format's 256-color limitation necessitates heavy dithering across the entire frame. This is particularly noticeable in the smooth gradients of the space background and the shimmering wave surfaces, which now appear grainy. Fine details in the distant starfield are partially obscured by the noise pattern.
+
+**gifski**: The optimized GIF shows heavy dithering throughout the image, which is a necessary trade-off for the limited 256-color palette given the complex gradients of the original cosmic scene. While the core structure and highlights of the waves are preserved, the fine detail and smooth transitions in the nebulae and dark space areas are replaced by a grainy texture. Temporal consistency appears maintained as the dither pattern seems stable between the frames provided.
+
+
+---
+

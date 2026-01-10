@@ -1,5 +1,6 @@
 use clap::Parser;
 use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
+use pixie_anim_lib::quant::{Rgb, DitherType};
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Write;
@@ -38,10 +39,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let delay = (100.0 / cli.fps).floor() as u16;
     
     let dither_type = match cli.dither.to_lowercase().as_str() {
-        "floyd" | "fs" => pixie_anim_lib::common::DitherType::FloydSteinberg,
-        "blue" | "bn" => pixie_anim_lib::common::DitherType::BlueNoise,
-        "ordered" | "bayer" => pixie_anim_lib::common::DitherType::Ordered,
-        _ => pixie_anim_lib::common::DitherType::None,
+        "floyd" | "fs" => DitherType::FloydSteinberg,
+        "blue" | "bn" => DitherType::BlueNoise,
+        "ordered" | "bayer" => DitherType::Ordered,
+        _ => DitherType::None,
     };
 
     println!("🚀 Target FPS: {} (Delay: {}ms)", cli.fps, delay * 10);
@@ -60,17 +61,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let quantizer = KMeansQuantizer::new(cli.quality);
-    let result = quantizer.quantize(&sampled_pixels, 255)?;
-    let global_palette = result.palette.colors;
-    let transparent_idx = 255u8;
-
-    let mut buffer = Vec::new();
-    let mut writer = GifWriter::new(&mut buffer);
-    let mut prev_pixels: Option<Vec<Rgb>> = None;
-    let mut lzw_encoder = LzwEncoder::new(8);
-    lzw_encoder.lossiness = cli.lossy;
-    
     let options = OptimizationOptions {
         quality: cli.quality,
         fps: cli.fps,

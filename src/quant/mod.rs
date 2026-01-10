@@ -6,6 +6,8 @@ pub mod zeng;
 pub mod dither;
 
 use crate::error::Result;
+
+#[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -123,7 +125,16 @@ impl Quantizer for KMeansQuantizer {
 
             // 3. Assignment step (Perceptual Distance via CIELAB Planar SIMD)
             let planar_centroids = crate::simd::PlanarLabPalette::from_lab(&centroids);
+            
+            #[cfg(feature = "rayon")]
             let new_assignments: Vec<usize> = sampled_pixels.par_iter()
+                .map(|&pixel_lab| {
+                    crate::simd::find_nearest_color_lab(pixel_lab, &planar_centroids)
+                })
+                .collect();
+
+            #[cfg(not(feature = "rayon"))]
+            let new_assignments: Vec<usize> = sampled_pixels.iter()
                 .map(|&pixel_lab| {
                     crate::simd::find_nearest_color_lab(pixel_lab, &planar_centroids)
                 })
