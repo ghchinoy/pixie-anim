@@ -109,7 +109,7 @@ export class PixieApp extends LitElement {
   @state() private fps = 12;
   @state() private lossy = 8;
   @state() private fuzz = 10;
-  @state() private dither = true;
+  @state() private dither = 3; // Default to Ordered (Bayer)
 
   async firstUpdated() {
     await init();
@@ -149,7 +149,12 @@ export class PixieApp extends LitElement {
           </div>
           <div class="control-group">
             <label>DITHER</label>
-            <input type="checkbox" .checked=${this.dither} @change=${(e: any) => this.dither = e.target.checked}>
+            <select @change=${(e: any) => this.dither = parseInt(e.target.value)} style="background: #000; color: #fff; border: 1px solid var(--border); font-size: 0.7rem; padding: 2px;">
+              <option value="0" ?selected=${this.dither === 0}>NONE</option>
+              <option value="1" ?selected=${this.dither === 1}>FLOYD</option>
+              <option value="2" ?selected=${this.dither === 2}>BLUE</option>
+              <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
+            </select>
           </div>
           ${this.sourceBuffer ? html`
             <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>

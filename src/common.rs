@@ -2,18 +2,10 @@
 
 use crate::error::Result;
 use crate::gif::{GifWriter, GifOptions};
-use crate::quant::{Rgb, KMeansQuantizer, Quantizer};
+use crate::quant::{Rgb, KMeansQuantizer, Quantizer, DitherType};
 use crate::lzw::LzwEncoder;
 use image::GenericImageView;
 use std::path::PathBuf;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DitherType {
-    None,
-    FloydSteinberg,
-    BlueNoise,
-    Ordered,
-}
 
 pub struct OptimizationOptions {
     pub quality: usize,

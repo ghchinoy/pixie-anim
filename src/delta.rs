@@ -1,7 +1,6 @@
 //! Inter-frame Delta Compression.
 
-use crate::quant::Rgb;
-use crate::common::DitherType;
+use crate::quant::{Rgb, DitherType};
 
 #[derive(Debug, Default)]
 pub struct FrameDelta {

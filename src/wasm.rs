@@ -5,7 +5,7 @@
 static ALLOC: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
 
 use wasm_bindgen::prelude::*;
-use crate::quant::{Rgb, KMeansQuantizer, Quantizer};
+use crate::quant::{Rgb, KMeansQuantizer, Quantizer, DitherType};
 use crate::gif::{GifWriter, GifOptions};
 use image::AnimationDecoder;
 use image::codecs::gif::GifDecoder;
@@ -57,7 +57,7 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
 /// * `quality` - K-Means iterations (default 10)
 /// * `lossy` - LZW neighbor matching (0-20)
 /// * `fuzz` - Perceptual transparency threshold (0-100)
-/// * `dither` - Enable Floyd-Steinberg dithering
+/// * `dither` - Dithering algorithm (0=None, 1=Floyd, 2=Blue, 3=Ordered)
 #[wasm_bindgen(js_name = "encodeGif")]
 pub fn encode_gif(
     data: &[u8],
@@ -68,15 +68,22 @@ pub fn encode_gif(
     quality: usize,
     lossy: u8,
     fuzz: u32,
-    dither: bool,
+    dither: u8,
 ) -> Result<Vec<u8>, JsError> {
     let frame_size = width as usize * height as usize * 4;
     if data.len() != frame_size * num_frames as usize {
         return Err(JsError::new("Data length does not match dimensions and frame count"));
     }
 
-    let delay = (100.0 / fps).round() as u16;
+    let delay = (100.0 / fps).floor() as u16;
     let transparent_idx = 255u8;
+
+    let dither_type = match dither {
+        1 => DitherType::FloydSteinberg,
+        2 => DitherType::BlueNoise,
+        3 => DitherType::Ordered,
+        _ => DitherType::None,
+    };
 
     // 1. Sampling for global palette
     let mut sampled_pixels = Vec::new();
@@ -137,24 +144,24 @@ pub fn encode_gif(
         if f == 0 {
             writer.write_graphic_control_extension(delay, None).map_err(|e| JsError::new(&e.to_string()))?;
             
-            let indices = if dither {
-                crate::quant::dither::dither_frame(width, height, &curr_pixels, &global_palette)
-            } else {
-                use rayon::prelude::*;
-                curr_pixels.par_iter()
-                    .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                    .collect()
+            let indices = match dither_type {
+                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width, height, &curr_pixels, &global_palette),
+                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width, height, &curr_pixels, &global_palette),
+                DitherType::Ordered => crate::quant::dither::dither_ordered(width, height, &curr_pixels, &global_palette),
+                _ => {
+                    use rayon::prelude::*;
+                    curr_pixels.par_iter()
+                        .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                        .collect()
+                }
             };
             writer.write_image_data(0, 0, width, height, 8, &indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
         } else {
             if let Some(prev) = &prev_pixels {
                 if let Some(delta) = crate::delta::find_delta_fuzzy(
-                    width, height, &curr_pixels, prev, &global_palette, transparent_idx, fuzz_sq
+                    width, height, &curr_pixels, prev, &global_palette, transparent_idx, fuzz_sq, dither_type
                 ) {
                     writer.write_graphic_control_extension(delay, Some(transparent_idx)).map_err(|e| JsError::new(&e.to_string()))?;
-                    
-                    // If dither is enabled, we should ideally dither within the delta bounding box
-                    // For now, find_delta_fuzzy doesn't support dithering, but using dithered first frame helps
                     writer.write_image_data(delta.x, delta.y, delta.width, delta.height, 8, &delta.indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
                 }
             }

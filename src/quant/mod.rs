@@ -15,6 +15,14 @@ pub struct Rgb {
     pub b: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DitherType {
+    None,
+    FloydSteinberg,
+    BlueNoise,
+    Ordered,
+}
+
 pub struct Palette {
     pub colors: Vec<Rgb>,
 }
