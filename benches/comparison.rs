@@ -16,7 +16,7 @@ fn benchmark_pixo_gif_encoding(c: &mut Criterion) {
         }
     }
 
-    let mut group = c.benchmark_group("Pixo-GIF Core");
+    let mut group = c.benchmark_group("Pixie-Anim Core");
     
     group.bench_function("Quantize + Encode (256x256)", |b| {
         b.iter(|| {

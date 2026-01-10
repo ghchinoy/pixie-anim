@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Parser)]
-#[command(author, version, about = "Pixo-GIF: Subjective Quality Judge")]
+#[command(author, version, about = "Pixie-Anim: Subjective Quality Judge")]
 struct Cli {
     /// Original file (MP4 or GIF)
     original: PathBuf,

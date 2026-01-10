@@ -80,10 +80,10 @@ graph TD
 - [ ] Initial Publication to `crates.io` (`pixie-anim-4vs`).
 
 ### Future Exploration
-- [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixo-gif-c70`).
+- [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixie-anim-c70`).
 - [ ] **Optimal LZW**: Look-ahead string matching logic.
-- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder (`pixo-gif-iaj`).
-- [ ] **MP4/WebM Benchmark Integration**: Native decoding in the CLI suite (`pixo-gif-o0g`).
+- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder (`pixie-anim-iaj`).
+- [ ] **MP4/WebM Benchmark Integration**: Native decoding in the CLI suite (`pixie-anim-o0g`).
 
 ## 4. Key Implementation Notes
 - **Memory**: Use dictionary reuse and Object URL revocation to avoid browser hangs on large animations.

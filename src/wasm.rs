@@ -1,4 +1,4 @@
-//! WebAssembly bindings for pixo-gif.
+//! WebAssembly bindings for Pixie-Anim.
 
 #[cfg(all(target_arch = "wasm32", feature = "wasm"))]
 #[global_allocator]

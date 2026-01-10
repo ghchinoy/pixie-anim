@@ -9,7 +9,7 @@ use std::io::Write;
 use std::time::Instant;
 
 #[derive(Parser)]
-#[command(author, version, about = "Pixo-GIF: High-performance GIF optimizer")]
+#[command(author, version, about = "Pixie-Anim: High-performance GIF optimizer")]
 struct Cli {
     /// Input images (PNG, JPG, etc.)
     #[arg(required = true)]

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Basic parity test for Pixo-GIF WASM
+// Basic parity test for Pixie-Anim WASM
 async function runTest() {
     console.log("🧪 Starting WASM Parity Test...");
     

@@ -1,4 +1,4 @@
-## Project Context: Pixo-GIF
+## Project Context: Pixie-Anim
 
 **Goal:** A high-performance, zero-dependency GIF optimizer following the "Pixo" philosophy of from-scratch algorithm implementation.
 
@@ -10,7 +10,7 @@
 
 ### Core Philosophy
 1. **Zero Runtime Dependencies:** All codecs (LZW, etc.) must be implemented from scratch.
-2. **Benchmarking First:** Every optimization must be measured against `gifsicle` and `ffmpeg` (see `pixo-gif-sn4`).
+2. **Benchmarking First:** Every optimization must be measured against `gifsicle` and `ffmpeg` (see `pixie-anim-sn4`).
 3. **Lossy Optimization:** Use K-Means quantization and inter-frame transparency to beat standard compression ratios.
 4. **SIMD-First:** Target WASM SIMD for the nearest-color search bottleneck.
 

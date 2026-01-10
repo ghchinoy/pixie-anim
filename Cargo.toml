@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "pixie-anim"
-path = "src/bin/pixo-gif.rs"
+path = "src/bin/pixie-anim.rs"
 required-features = ["cli"]
 
 [[bin]]

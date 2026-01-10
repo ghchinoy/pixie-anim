@@ -1,4 +1,4 @@
-//! # pixo-gif
+//! # Pixie-Anim
 //!
 //! A zero-dependency, SIMD-accelerated GIF optimizer.
 
