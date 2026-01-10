@@ -1,6 +1,6 @@
 //! Zeng Palette Reordering.
 //!
-//! Reorders palette indices to improve LZW compression by ensuring 
+//! Reorders palette indices to improve LZW compression by ensuring
 //! visually similar colors have adjacent indices.
 
 use crate::quant::Palette;

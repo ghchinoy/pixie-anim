@@ -16,6 +16,20 @@ pub struct GifOptions {
     pub palette_size: u8,
 }
 
+/// Descriptor for a single image frame within the GIF.
+pub struct ImageDescriptor {
+    /// X offset from the left edge of the logical screen.
+    pub x: u16,
+    /// Y offset from the top edge of the logical screen.
+    pub y: u16,
+    /// Width of the image.
+    pub width: u16,
+    /// Height of the image.
+    pub height: u16,
+    /// LZW minimum code size.
+    pub lzw_min_code_size: u8,
+}
+
 /// A writer for creating GIF89a formatted data.
 pub struct GifWriter<W: Write> {
     writer: W,
@@ -37,14 +51,14 @@ impl<W: Write> GifWriter<W> {
     pub fn write_logical_screen_descriptor(&mut self, options: &GifOptions) -> Result<()> {
         self.writer.write_all(&options.width.to_le_bytes())?;
         self.writer.write_all(&options.height.to_le_bytes())?;
-        
+
         let mut packed = 0u8;
         if options.has_global_palette {
             packed |= 0x80;
             packed |= (options.palette_size - 1) & 0x07;
             packed |= 0x70; // 8-bit color resolution
         }
-        
+
         self.writer.write_all(&[packed, 0, 0])?; // packed, background, pixel aspect ratio
         Ok(())
     }
@@ -66,9 +80,13 @@ impl<W: Write> GifWriter<W> {
     }
 
     /// Writes a Graphic Control Extension block for a frame.
-    pub fn write_graphic_control_extension(&mut self, delay: u16, transparent_idx: Option<u8>) -> Result<()> {
+    pub fn write_graphic_control_extension(
+        &mut self,
+        delay: u16,
+        transparent_idx: Option<u8>,
+    ) -> Result<()> {
         self.writer.write_all(&[0x21, 0xF9, 0x04])?; // introducer, label, size
-        
+
         let mut packed = 0x04; // Disposal Method: 1 (Do not dispose)
         if transparent_idx.is_some() {
             packed |= 0x01;
@@ -80,17 +98,22 @@ impl<W: Write> GifWriter<W> {
     }
 
     /// Writes encoded image data sub-blocks.
-    pub fn write_image_data(&mut self, x: u16, y: u16, width: u16, height: u16, lzw_min_code_size: u8, indices: &[u8], encoder: &mut LzwEncoder) -> Result<()> {
+    pub fn write_image_data(
+        &mut self,
+        descriptor: &ImageDescriptor,
+        indices: &[u8],
+        encoder: &mut LzwEncoder,
+    ) -> Result<()> {
         // Image Descriptor
         self.writer.write_all(&[0x2C])?; // separator
-        self.writer.write_all(&x.to_le_bytes())?;
-        self.writer.write_all(&y.to_le_bytes())?;
-        self.writer.write_all(&width.to_le_bytes())?;
-        self.writer.write_all(&height.to_le_bytes())?;
+        self.writer.write_all(&descriptor.x.to_le_bytes())?;
+        self.writer.write_all(&descriptor.y.to_le_bytes())?;
+        self.writer.write_all(&descriptor.width.to_le_bytes())?;
+        self.writer.write_all(&descriptor.height.to_le_bytes())?;
         self.writer.write_all(&[0])?; // packed: no local palette
 
         // LZW Minimum Code Size
-        self.writer.write_all(&[lzw_min_code_size])?;
+        self.writer.write_all(&[descriptor.lzw_min_code_size])?;
 
         // Encode data into sub-blocks
         let mut lzw_data = Vec::new();
@@ -128,19 +151,26 @@ mod tests {
                 has_global_palette: true,
                 palette_size: 1, // 2 colors
             };
-            
+
             writer.write_header().unwrap();
             writer.write_logical_screen_descriptor(&options).unwrap();
-            
+
             let mut palette = vec![0u8; 6]; // 2 RGB colors
             palette[0] = 255; // Red
             writer.write_global_palette(&palette).unwrap();
             
             let mut encoder = LzwEncoder::new(2);
-            writer.write_image_data(0, 0, 1, 1, 2, &[0], &mut encoder).unwrap();
+            let descriptor = ImageDescriptor {
+                x: 0,
+                y: 0,
+                width: 1,
+                height: 1,
+                lzw_min_code_size: 2,
+            };
+            writer.write_image_data(&descriptor, &[0], &mut encoder).unwrap();
             writer.write_trailer().unwrap();
         }
-        
+
         assert!(buffer.starts_with(b"GIF89a"));
         assert_eq!(*buffer.last().unwrap(), 0x3B);
     }

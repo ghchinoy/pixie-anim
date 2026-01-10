@@ -1,7 +1,7 @@
 //! x86_64 SIMD implementations.
 
-use crate::quant::Rgb;
 use crate::color::Lab;
+use crate::quant::Rgb;
 use std::arch::x86_64::*;
 
 /// A palette stored in planar format for SIMD efficiency.
@@ -38,10 +38,10 @@ pub unsafe fn find_nearest_color_lab_planar_avx2(pixel: Lab, palette: &PlanarLab
     let p_b = _mm256_set1_ps(pixel.b);
 
     let chunks = palette.len / 8;
-    
+
     for i in 0..chunks {
         let offset = i * 8;
-        
+
         // Load 8 components at once from planar vectors
         let l_v = _mm256_loadu_ps(palette.l.as_ptr().add(offset));
         let a_v = _mm256_loadu_ps(palette.a.as_ptr().add(offset));
@@ -54,7 +54,7 @@ pub unsafe fn find_nearest_color_lab_planar_avx2(pixel: Lab, palette: &PlanarLab
 
         let dist_v = _mm256_add_ps(
             _mm256_add_ps(_mm256_mul_ps(dl, dl), _mm256_mul_ps(da, da)),
-            _mm256_mul_ps(db, db)
+            _mm256_mul_ps(db, db),
         );
 
         // Extract and compare
@@ -95,8 +95,8 @@ pub unsafe fn find_nearest_color_avx2(pixel: Rgb, palette: &[Rgb]) -> usize {
     let b_pixel = _mm256_set1_epi32(pixel.b as i32);
 
     let mut i = 0;
-    
-    // We process in smaller chunks if needed, but for 256 colors, 
+
+    // We process in smaller chunks if needed, but for 256 colors,
     // a straightforward loop is often fine if we avoid the extra array copies.
     for (idx, &color) in palette.iter().enumerate() {
         let dr = pixel.r as i32 - color.r as i32;
@@ -109,10 +109,10 @@ pub unsafe fn find_nearest_color_avx2(pixel: Rgb, palette: &[Rgb]) -> usize {
             best_idx = idx;
         }
     }
-    
+
     // NOTE: The previous SIMD version was slower due to array copies.
-    // A truly fast SIMD version for RGB distance requires clever shuffles 
-    // or a Planar palette layout. For now, we use the scalar path 
+    // A truly fast SIMD version for RGB distance requires clever shuffles
+    // or a Planar palette layout. For now, we use the scalar path
     // which is already very fast (250ns for 256 colors) until we implement
     // the Planar palette optimization.
 

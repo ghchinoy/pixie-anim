@@ -1,9 +1,9 @@
 use clap::Parser;
-use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
-use pixie_anim_lib::quant::{Rgb, DitherType};
-use std::path::PathBuf;
+use pixie_anim_lib::common::{optimize_sequence, OptimizationOptions};
+use pixie_anim_lib::quant::{DitherType, Rgb};
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::time::Instant;
 
 #[derive(Parser)]
@@ -34,10 +34,10 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     let start = Instant::now();
     let delay = (100.0 / cli.fps).floor() as u16;
-    
+
     let dither_type = match cli.dither.to_lowercase().as_str() {
         "floyd" | "fs" => DitherType::FloydSteinberg,
         "blue" | "bn" => DitherType::BlueNoise,
@@ -50,13 +50,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Sampling sequence for global palette...");
     let mut sampled_pixels = Vec::new();
     let sample_every = (cli.inputs.len() / 10).max(1);
-    
+
     for (i, input_path) in cli.inputs.iter().enumerate() {
         if i % sample_every == 0 {
             let img = image::open(input_path)?;
             let rgb = img.to_rgb8();
             for p in rgb.pixels().step_by(100) {
-                sampled_pixels.push(Rgb { r: p[0], g: p[1], b: p[2] });
+                sampled_pixels.push(Rgb {
+                    r: p[0],
+                    g: p[1],
+                    b: p[2],
+                });
             }
         }
     }
@@ -71,12 +75,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("🚀 Starting optimization of {} frames...", cli.inputs.len());
     let buffer = optimize_sequence(&cli.inputs, &options)?;
-    
+
     let mut out_file = File::create(&cli.output)?;
     out_file.write_all(&buffer)?;
-    
+
     println!("\n✅ Done! Total time: {:?}", start.elapsed());
     println!("Output size: {:.2} KB", buffer.len() as f64 / 1024.0);
-    
+
     Ok(())
 }

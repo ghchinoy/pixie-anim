@@ -2,8 +2,8 @@
 
 use crate::quant::Rgb;
 
-use crate::simd::PlanarLabPalette;
 use crate::color::Lab;
+use crate::simd::PlanarLabPalette;
 
 /// Find the index of the nearest color in Lab space using a planar palette.
 pub fn find_nearest_color_lab_planar(pixel: Lab, palette: &PlanarLabPalette) -> usize {

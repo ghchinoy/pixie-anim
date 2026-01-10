@@ -1,14 +1,10 @@
 //! Evaluation and Benchmarking utilities.
 
 use crate::error::Result;
-use gemini_client_api::gemini::{
-    ask::Gemini,
-    types::sessions::Session,
-    utils::MarkdownToParts,
-};
+use gemini_client_api::gemini::{ask::Gemini, types::sessions::Session, utils::MarkdownToParts};
+use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use serde_json::Value;
 
 /// An automated judge that uses Vision AI to evaluate quality.
 pub struct Judge {
@@ -33,21 +29,58 @@ impl Judge {
     pub fn extract_evaluation_frames(input: &Path, prefix: &str) -> Vec<PathBuf> {
         let mut frames = Vec::new();
         let temp_dir = std::env::temp_dir();
-        
+
         // Extract 3 frames: start, middle, end
         let f1 = temp_dir.join(format!("{}_1.png", prefix));
-        Command::new("ffmpeg").args(&["-y", "-i", input.to_str().unwrap(), "-frames:v", "1", "-update", "1", f1.to_str().unwrap()])
-            .output().ok();
+        Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-i",
+                input.to_str().unwrap(),
+                "-frames:v",
+                "1",
+                "-update",
+                "1",
+                f1.to_str().unwrap(),
+            ])
+            .output()
+            .ok();
         frames.push(f1);
 
         let f2 = temp_dir.join(format!("{}_2.png", prefix));
-        Command::new("ffmpeg").args(&["-y", "-i", input.to_str().unwrap(), "-vf", "select='not(mod(n,60))'", "-frames:v", "1", "-update", "1", f2.to_str().unwrap()])
-            .output().ok();
+        Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-i",
+                input.to_str().unwrap(),
+                "-vf",
+                "select='not(mod(n,60))'",
+                "-frames:v",
+                "1",
+                "-update",
+                "1",
+                f2.to_str().unwrap(),
+            ])
+            .output()
+            .ok();
         frames.push(f2);
 
         let f3 = temp_dir.join(format!("{}_3.png", prefix));
-        Command::new("ffmpeg").args(&["-y", "-i", input.to_str().unwrap(), "-sseof", "-1", "-frames:v", "1", "-update", "1", f3.to_str().unwrap()])
-            .output().ok();
+        Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-i",
+                input.to_str().unwrap(),
+                "-sseof",
+                "-1",
+                "-frames:v",
+                "1",
+                "-update",
+                "1",
+                f3.to_str().unwrap(),
+            ])
+            .output()
+            .ok();
         frames.push(f3);
 
         frames
@@ -72,12 +105,17 @@ Provide a 'Synthetic MOS' (Mean Opinion Score) from 1 to 10 for the overall qual
             orig_frames[2].to_str().unwrap(), opt_frames[2].to_str().unwrap()
         ).replace("'", "\""); // Use double quotes for valid JSON template
 
-        let parts = MarkdownToParts::new(&prompt, |_| mime::IMAGE_PNG).await.process();
-        let response = self.ai.ask(session.ask(parts)).await
+        let parts = MarkdownToParts::new(&prompt, |_| mime::IMAGE_PNG)
+            .await
+            .process();
+        let response = self
+            .ai
+            .ask(session.ask(parts))
+            .await
             .map_err(|e| crate::error::Error::Internal(e.to_string()))?;
-        
+
         let text = response.get_chat().get_text_no_think("");
-        
+
         if let Some(json_start) = text.find('{') {
             if let Some(json_end) = text.rfind('}') {
                 let json_str = &text[json_start..=json_end];
@@ -86,7 +124,10 @@ Provide a 'Synthetic MOS' (Mean Opinion Score) from 1 to 10 for the overall qual
                 return Ok(val);
             }
         }
-        
-        Err(crate::error::Error::Internal(format!("Failed to parse JSON response from AI: {}", text)))
+
+        Err(crate::error::Error::Internal(format!(
+            "Failed to parse JSON response from AI: {}",
+            text
+        )))
     }
 }

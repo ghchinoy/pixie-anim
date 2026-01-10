@@ -4,19 +4,23 @@
 #[global_allocator]
 static ALLOC: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
 
-use wasm_bindgen::prelude::*;
-use crate::quant::{Rgb, KMeansQuantizer, Quantizer, DitherType};
-use crate::gif::{GifWriter, GifOptions};
+use crate::delta::DeltaOptions;
+use crate::gif::{GifOptions, GifWriter, ImageDescriptor};
+use crate::quant::{DitherType, KMeansQuantizer, Quantizer, Rgb};
 use image::AnimationDecoder;
 use image::codecs::gif::GifDecoder;
+use wasm_bindgen::prelude::*;
 
 /// Decodes a GIF into raw RGBA pixels.
 /// Returns [width, height, num_frames, ...pixels]
 #[wasm_bindgen(js_name = "decodeGif")]
 pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
     let decoder = GifDecoder::new(data).map_err(|e| JsError::new(&e.to_string()))?;
-    let frames = decoder.into_frames().collect_frames().map_err(|e| JsError::new(&e.to_string()))?;
-    
+    let frames = decoder
+        .into_frames()
+        .collect_frames()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
     if frames.is_empty() {
         return Err(JsError::new("No frames found in GIF"));
     }
@@ -24,12 +28,19 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
     let width = frames[0].buffer().width() as u16;
     let height = frames[0].buffer().height() as u16;
     let num_frames = frames.len() as u32;
-    
+
     // Calculate average delay
-    let total_delay: u32 = frames.iter().map(|f| {
-        let (num, den) = f.delay().numer_denom_ms();
-        if den == 0 { 0 } else { num / den }
-    }).sum();
+    let total_delay: u32 = frames
+        .iter()
+        .map(|f| {
+            let (num, den) = f.delay().numer_denom_ms();
+            if den == 0 {
+                0
+            } else {
+                num / den
+            }
+        })
+        .sum();
     let avg_delay_ms = (total_delay / num_frames).max(10); // Minimum 10ms (100fps)
 
     let mut output = Vec::new();
@@ -47,7 +58,7 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
 }
 
 /// Encodes a sequence of frames into an optimized GIF.
-/// 
+///
 /// # Arguments
 /// * `data` - Flat buffer of RGBA pixels for all frames
 /// * `width` - Image width
@@ -59,6 +70,7 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
 /// * `fuzz` - Perceptual transparency threshold (0-100)
 /// * `dither` - Dithering algorithm (0=None, 1=Floyd, 2=Blue, 3=Ordered)
 #[wasm_bindgen(js_name = "encodeGif")]
+#[allow(clippy::too_many_arguments)]
 pub fn encode_gif(
     data: &[u8],
     width: u16,
@@ -72,7 +84,9 @@ pub fn encode_gif(
 ) -> Result<Vec<u8>, JsError> {
     let frame_size = width as usize * height as usize * 4;
     if data.len() != frame_size * num_frames as usize {
-        return Err(JsError::new("Data length does not match dimensions and frame count"));
+        return Err(JsError::new(
+            "Data length does not match dimensions and frame count",
+        ));
     }
 
     let delay = (100.0 / fps).floor() as u16;
@@ -91,7 +105,8 @@ pub fn encode_gif(
     for f in 0..num_frames_to_sample {
         let frame_idx = f * (num_frames as usize / num_frames_to_sample);
         let start = frame_idx * frame_size;
-        for i in (0..frame_size).step_by(100) { // sampled for speed
+        for i in (0..frame_size).step_by(100) {
+            // sampled for speed
             sampled_pixels.push(Rgb {
                 r: data[start + i],
                 g: data[start + i + 1],
@@ -101,7 +116,9 @@ pub fn encode_gif(
     }
 
     let quantizer = KMeansQuantizer::new(quality);
-    let result = quantizer.quantize(&sampled_pixels, 255).map_err(|e| JsError::new(&e.to_string()))?;
+    let result = quantizer
+        .quantize(&sampled_pixels, 255)
+        .map_err(|e| JsError::new(&e.to_string()))?;
     let global_palette = result.palette.colors;
 
     // 2. Encoding
@@ -117,17 +134,29 @@ pub fn encode_gif(
         palette_size: 8,
     };
 
-    writer.write_header().map_err(|e| JsError::new(&e.to_string()))?;
-    writer.write_logical_screen_descriptor(&options).map_err(|e| JsError::new(&e.to_string()))?;
-    
+    writer
+        .write_header()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+    writer
+        .write_logical_screen_descriptor(&options)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
     let mut pal_bytes = Vec::with_capacity(768);
     for p in &global_palette {
-        pal_bytes.push(p.r); pal_bytes.push(p.g); pal_bytes.push(p.b);
+        pal_bytes.push(p.r);
+        pal_bytes.push(p.g);
+        pal_bytes.push(p.b);
     }
-    while pal_bytes.len() < 768 { pal_bytes.push(0); }
-    writer.write_global_palette(&pal_bytes).map_err(|e| JsError::new(&e.to_string()))?;
+    while pal_bytes.len() < 768 {
+        pal_bytes.push(0);
+    }
+    writer
+        .write_global_palette(&pal_bytes)
+        .map_err(|e| JsError::new(&e.to_string()))?;
 
-    writer.write_netscape_loop_block().map_err(|e| JsError::new(&e.to_string()))?;
+    writer
+        .write_netscape_loop_block()
+        .map_err(|e| JsError::new(&e.to_string()))?;
 
     let mut lzw_encoder = crate::lzw::LzwEncoder::new(8);
     lzw_encoder.lossiness = lossy;
@@ -137,38 +166,96 @@ pub fn encode_gif(
         let curr_pixels: Vec<Rgb> = (0..width as usize * height as usize)
             .map(|i| {
                 let p = start + i * 4;
-                Rgb { r: data[p], g: data[p+1], b: data[p+2] }
+                Rgb {
+                    r: data[p],
+                    g: data[p + 1],
+                    b: data[p + 2],
+                }
             })
             .collect();
 
         if f == 0 {
-            writer.write_graphic_control_extension(delay, None).map_err(|e| JsError::new(&e.to_string()))?;
-            
+            writer
+                .write_graphic_control_extension(delay, None)
+                .map_err(|e| JsError::new(&e.to_string()))?;
+
             let indices = match dither_type {
-                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width, height, &curr_pixels, &global_palette),
-                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width, height, &curr_pixels, &global_palette),
-                DitherType::Ordered => crate::quant::dither::dither_ordered(width, height, &curr_pixels, &global_palette),
+                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(
+                    width,
+                    height,
+                    &curr_pixels,
+                    &global_palette,
+                ),
+                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(
+                    width,
+                    height,
+                    &curr_pixels,
+                    &global_palette,
+                ),
+                DitherType::Ordered => crate::quant::dither::dither_ordered(
+                    width,
+                    height,
+                    &curr_pixels,
+                    &global_palette,
+                ),
                 _ => {
-                    use rayon::prelude::*;
-                    curr_pixels.par_iter()
-                        .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                        .collect()
+                    #[cfg(feature = "rayon")]
+                    {
+                        use rayon::prelude::*;
+                        curr_pixels
+                            .par_iter()
+                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                            .collect()
+                    }
+                    #[cfg(not(feature = "rayon"))]
+                    {
+                        curr_pixels
+                            .iter()
+                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+                            .collect()
+                    }
                 }
             };
-            writer.write_image_data(0, 0, width, height, 8, &indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
-        } else {
-            if let Some(prev) = &prev_pixels {
-                if let Some(delta) = crate::delta::find_delta_fuzzy(
-                    width, height, &curr_pixels, prev, &global_palette, transparent_idx, fuzz_sq, dither_type
-                ) {
-                    writer.write_graphic_control_extension(delay, Some(transparent_idx)).map_err(|e| JsError::new(&e.to_string()))?;
-                    writer.write_image_data(delta.x, delta.y, delta.width, delta.height, 8, &delta.indices, &mut lzw_encoder).map_err(|e| JsError::new(&e.to_string()))?;
-                }
+            let descriptor = ImageDescriptor {
+                x: 0,
+                y: 0,
+                width,
+                height,
+                lzw_min_code_size: 8,
+            };
+            writer
+                .write_image_data(&descriptor, &indices, &mut lzw_encoder)
+                .map_err(|e| JsError::new(&e.to_string()))?;
+        } else if let Some(prev) = &prev_pixels {
+            let delta_options = DeltaOptions {
+                width,
+                height,
+                palette: &global_palette,
+                transparent_idx,
+                fuzz_threshold: fuzz_sq,
+                dither: dither_type,
+            };
+            if let Some(delta) = crate::delta::find_delta_fuzzy(&curr_pixels, prev, &delta_options) {
+                writer
+                    .write_graphic_control_extension(delay, Some(transparent_idx))
+                    .map_err(|e| JsError::new(&e.to_string()))?;
+                let descriptor = ImageDescriptor {
+                    x: delta.x,
+                    y: delta.y,
+                    width: delta.width,
+                    height: delta.height,
+                    lzw_min_code_size: 8,
+                };
+                writer
+                    .write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)
+                    .map_err(|e| JsError::new(&e.to_string()))?;
             }
         }
         prev_pixels = Some(curr_pixels);
     }
 
-    writer.write_trailer().map_err(|e| JsError::new(&e.to_string()))?;
+    writer
+        .write_trailer()
+        .map_err(|e| JsError::new(&e.to_string()))?;
     Ok(buffer)
 }

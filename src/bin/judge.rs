@@ -18,9 +18,9 @@ struct Cli {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     let cli = Cli::parse();
-    
-    let api_key = std::env::var("GEMINI_API_KEY")
-        .expect("GEMINI_API_KEY environment variable not found");
+
+    let api_key =
+        std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not found");
 
     println!("👁️  Gemini is reviewing frame-by-frame comparison...");
 

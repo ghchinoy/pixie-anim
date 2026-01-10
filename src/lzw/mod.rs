@@ -18,7 +18,7 @@ pub struct LzwEncoder {
 impl LzwEncoder {
     /// Creates a new LzwEncoder with the specified minimum code size.
     pub fn new(min_code_size: u8) -> Self {
-        Self { 
+        Self {
             min_code_size,
             dictionary: vec![-1i32; MAX_CODES as usize * 256],
             lossiness: 0,
@@ -29,11 +29,11 @@ impl LzwEncoder {
     pub fn encode(&mut self, data: &[u8], buffer: &mut Vec<u8>) -> Result<()> {
         let clear_code = 1 << self.min_code_size;
         let eoi_code = clear_code + 1;
-        
+
         let mut bit_writer = BitWriter::new(buffer);
         let mut code_size = self.min_code_size + 1;
         let mut next_code = eoi_code + 1;
-        
+
         self.dictionary.fill(-1);
 
         bit_writer.write_bits(clear_code, code_size);
@@ -56,7 +56,7 @@ impl LzwEncoder {
             } else {
                 // LOSSY OPTIMIZATION:
                 // Because we use Zeng Reordering, neighbors (idx-1, idx+1) are visually similar.
-                // If we can't find a match for the current byte, check if a neighbor allows 
+                // If we can't find a match for the current byte, check if a neighbor allows
                 // us to continue the string.
                 let mut found_lossy = false;
                 if self.lossiness > 0 {
@@ -64,7 +64,7 @@ impl LzwEncoder {
                     for offset in 1..=(self.lossiness as i16) {
                         for sign in &[-1, 1] {
                             let neighbor = character as i16 + (offset * sign);
-                            if neighbor >= 0 && neighbor <= 255 {
+                            if (0..=255).contains(&neighbor) {
                                 let n_idx = ((prefix as usize) << 8) | neighbor as usize;
                                 let n_code = self.dictionary[n_idx];
                                 if n_code != -1 {
@@ -74,17 +74,19 @@ impl LzwEncoder {
                                 }
                             }
                         }
-                        if found_lossy { break; }
+                        if found_lossy {
+                            break;
+                        }
                     }
                 }
 
                 if !found_lossy {
                     bit_writer.write_bits(prefix, code_size);
-                    
+
                     if next_code < MAX_CODES {
                         self.dictionary[dict_idx] = next_code as i32;
                         next_code += 1;
-                        
+
                         if next_code > (1 << code_size) && code_size < 12 {
                             code_size += 1;
                         }
@@ -94,7 +96,7 @@ impl LzwEncoder {
                         code_size = self.min_code_size + 1;
                         next_code = eoi_code + 1;
                     }
-                    
+
                     prefix = character as u16;
                 }
             }

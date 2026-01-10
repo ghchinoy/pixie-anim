@@ -1,8 +1,8 @@
-use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
+use pixie_anim_lib::common::{optimize_sequence, OptimizationOptions};
 use pixie_anim_lib::quant::DitherType;
-use std::path::PathBuf;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Prepare input paths (requires real images to run)

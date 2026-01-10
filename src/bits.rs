@@ -25,9 +25,9 @@ impl<'a> BitWriter<'a> {
         while remaining_bits > 0 {
             let bits_to_write = std::cmp::min(remaining_bits, 8 - self.bit_count);
             let mask = (1 << bits_to_write) - 1;
-            
+
             self.current_byte |= ((val & mask) as u8) << self.bit_count;
-            
+
             self.bit_count += bits_to_write;
             val >>= bits_to_write;
             remaining_bits -= bits_to_write;

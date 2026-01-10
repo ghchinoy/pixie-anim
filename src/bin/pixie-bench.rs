@@ -1,11 +1,11 @@
 use clap::Parser;
-use pixie_anim_lib::common::{OptimizationOptions, optimize_sequence};
-use pixie_anim_lib::quant::DitherType;
+use pixie_anim_lib::common::{optimize_sequence, OptimizationOptions};
 use pixie_anim_lib::evaluation::Judge;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use pixie_anim_lib::quant::DitherType;
 use std::fs;
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::Instant;
 
 #[derive(Parser)]
@@ -60,7 +60,12 @@ fn check_dependencies() -> Vec<String> {
     let deps = ["ffmpeg", "gifsicle", "gifski"];
     let mut missing = Vec::new();
     for dep in deps {
-        if Command::new("which").arg(dep).output().map(|o| !o.status.success()).unwrap_or(true) {
+        if Command::new("which")
+            .arg(dep)
+            .output()
+            .map(|o| !o.status.success())
+            .unwrap_or(true)
+        {
             missing.push(dep.to_string());
         }
     }
@@ -73,10 +78,13 @@ fn extract_frames(input: &Path, test_name: &str) -> PathBuf {
         println!("🎞️  Extracting frames to {:?}...", frame_dir);
         fs::create_dir_all(&frame_dir).expect("Failed to create frame directory");
         Command::new("ffmpeg")
-            .args(&[
-                "-y", "-i", input.to_str().unwrap(),
-                "-vf", "fps=15,scale=640:-1",
-                &format!("{}/frame%03d.png", frame_dir.to_str().unwrap())
+            .args([
+                "-y",
+                "-i",
+                input.to_str().unwrap(),
+                "-vf",
+                "fps=15,scale=640:-1",
+                &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
             ])
             .output()
             .expect("Failed to execute ffmpeg");
@@ -91,12 +99,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     let cli = Cli::parse();
 
-    let api_key = std::env::var("GEMINI_API_KEY")
-        .expect("GEMINI_API_KEY environment variable not found");
+    let api_key =
+        std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not found");
 
     let missing = check_dependencies();
     if !missing.is_empty() {
-        eprintln!("❌ Missing dependencies: {}. Please install them to proceed.", missing.join(", "));
+        eprintln!(
+            "❌ Missing dependencies: {}. Please install them to proceed.",
+            missing.join(", ")
+        );
         std::process::exit(1);
     }
 
@@ -151,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let time = start.elapsed().as_secs_f64();
     let output_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_pixie.gif", cli.name));
     fs::write(&output_path, &buffer)?;
-    
+
     let mut pixie_res = ToolResult {
         name: "Pixie-Anim".to_string(),
         time_secs: time,
@@ -168,25 +179,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Gifsicle
     println!("[2/4] Running Gifsicle...");
-    let baseline_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_baseline.gif", cli.name));
-    let gifsicle_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_gifsicle.gif", cli.name));
+    let baseline_path = PathBuf::from(format!(
+        "tests/fixtures/synthetic/{}_baseline.gif",
+        cli.name
+    ));
+    let gifsicle_path = PathBuf::from(format!(
+        "tests/fixtures/synthetic/{}_gifsicle.gif",
+        cli.name
+    ));
     let palette_path = PathBuf::from("tests/fixtures/synthetic/tmp_palette.png");
-    
+
     // Create baseline via ffmpeg for gifsicle
-    Command::new("ffmpeg").args(&[
-        "-y", "-i", &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
-        "-vf", "palettegen", palette_path.to_str().unwrap()
-    ]).output()?;
-    Command::new("ffmpeg").args(&[
-        "-y", "-i", &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
-        "-i", palette_path.to_str().unwrap(),
-        "-lavfi", "paletteuse", baseline_path.to_str().unwrap()
-    ]).output()?;
+    Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-i",
+            &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
+            "-vf",
+            "palettegen",
+            palette_path.to_str().unwrap(),
+        ])
+        .output()?;
+    Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-i",
+            &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
+            "-i",
+            palette_path.to_str().unwrap(),
+            "-lavfi",
+            "paletteuse",
+            baseline_path.to_str().unwrap(),
+        ])
+        .output()?;
 
     let start = Instant::now();
-    Command::new("gifsicle").args(&["-O3", baseline_path.to_str().unwrap(), "-o", gifsicle_path.to_str().unwrap()]).output()?;
+    Command::new("gifsicle")
+        .args([
+            "-O3",
+            baseline_path.to_str().unwrap(),
+            "-o",
+            gifsicle_path.to_str().unwrap(),
+        ])
+        .output()?;
     let time = start.elapsed().as_secs_f64();
-    
+
     let mut gs_res = ToolResult {
         name: "Gifsicle".to_string(),
         time_secs: time,
@@ -205,15 +242,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[3/4] Running FFmpeg 2-pass...");
     let ffmpeg_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_ffmpeg.gif", cli.name));
     let start = Instant::now();
-    Command::new("ffmpeg").args(&[
-        "-y", "-i", &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
-        "-vf", "palettegen", palette_path.to_str().unwrap()
-    ]).output()?;
-    Command::new("ffmpeg").args(&[
-        "-y", "-i", &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
-        "-i", palette_path.to_str().unwrap(),
-        "-lavfi", "paletteuse", ffmpeg_path.to_str().unwrap()
-    ]).output()?;
+    Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-i",
+            &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
+            "-vf",
+            "palettegen",
+            palette_path.to_str().unwrap(),
+        ])
+        .output()?;
+    Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-i",
+            &format!("{}/frame%03d.png", frame_dir.to_str().unwrap()),
+            "-i",
+            palette_path.to_str().unwrap(),
+            "-lavfi",
+            "paletteuse",
+            ffmpeg_path.to_str().unwrap(),
+        ])
+        .output()?;
     let time = start.elapsed().as_secs_f64();
 
     let mut ff_res = ToolResult {
@@ -234,13 +284,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[4/4] Running gifski...");
     let gifski_path = PathBuf::from(format!("tests/fixtures/synthetic/{}_gifski.gif", cli.name));
     let start = Instant::now();
-    
+
     let mut gifski_args = vec!["-o".to_string(), gifski_path.to_str().unwrap().to_string()];
     for p in &frame_paths {
         gifski_args.push(p.to_str().unwrap().to_string());
     }
     Command::new("gifski").args(&gifski_args).output()?;
-    
+
     let time = start.elapsed().as_secs_f64();
 
     let mut gk_res = ToolResult {
@@ -259,20 +309,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // REPORTING
     println!("\n--- 📊 Benchmark Results: {} ---", cli.name);
-    println!("{:<12} | {:<10} | {:<10} | {:<10}", "Tool", "Time (s)", "Size (KB)", "Score");
+    println!(
+        "{:<12} | {:<10} | {:<10} | {:<10}",
+        "Tool", "Time (s)", "Size (KB)", "Score"
+    );
     println!("{}", "-".repeat(50));
     for r in &results {
-        println!("{:<12} | {:<10.3} | {:<10.2} | {:<10.1}", r.name, r.time_secs, r.size_kb, r.score);
+        println!(
+            "{:<12} | {:<10.3} | {:<10.2} | {:<10.1}",
+            r.name, r.time_secs, r.size_kb, r.score
+        );
     }
 
     if let Some(report_path) = cli.report {
-        let mut f = fs::OpenOptions::new().create(true).append(true).open(report_path)?;
+        let mut f = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(report_path)?;
         writeln!(f, "## Benchmark: {} ({})", cli.name, chrono::Local::now())?;
         writeln!(f, "Input: {:?}", cli.input)?;
         writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score |")?;
         writeln!(f, "|------|----------|-----------|-------|")?;
         for r in &results {
-            writeln!(f, "| {} | {:.3} | {:.2} | {:.1} |", r.name, r.time_secs, r.size_kb, r.score)?;
+            writeln!(
+                f,
+                "| {} | {:.3} | {:.2} | {:.1} |",
+                r.name, r.time_secs, r.size_kb, r.score
+            )?;
         }
         writeln!(f, "\n### Subjective Reasoning")?;
         for r in &results {

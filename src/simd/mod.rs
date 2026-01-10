@@ -64,7 +64,9 @@ pub fn find_nearest_color_lab(pixel: crate::color::Lab, palette: &PlanarLabPalet
     #[cfg(target_arch = "x86_64")]
     {
         match *SIMD_LEVEL {
-            SimdLevel::Avx2 => unsafe { x86_64::find_nearest_color_lab_planar_avx2(pixel, palette) },
+            SimdLevel::Avx2 => unsafe {
+                x86_64::find_nearest_color_lab_planar_avx2(pixel, palette)
+            },
             SimdLevel::Scalar => fallback::find_nearest_color_lab_planar(pixel, palette),
         }
     }
@@ -98,18 +100,46 @@ mod tests {
             Rgb { r: 255, g: 0, b: 0 },
             Rgb { r: 0, g: 255, b: 0 },
             Rgb { r: 0, g: 0, b: 255 },
-            Rgb { r: 128, g: 128, b: 128 },
-            Rgb { r: 10, g: 10, b: 10 },
-            Rgb { r: 200, g: 200, b: 200 },
-            Rgb { r: 50, g: 150, b: 250 },
-            Rgb { r: 250, g: 150, b: 50 },
-            Rgb { r: 20, g: 30, b: 40 },
+            Rgb {
+                r: 128,
+                g: 128,
+                b: 128,
+            },
+            Rgb {
+                r: 10,
+                g: 10,
+                b: 10,
+            },
+            Rgb {
+                r: 200,
+                g: 200,
+                b: 200,
+            },
+            Rgb {
+                r: 50,
+                g: 150,
+                b: 250,
+            },
+            Rgb {
+                r: 250,
+                g: 150,
+                b: 50,
+            },
+            Rgb {
+                r: 20,
+                g: 30,
+                b: 40,
+            },
         ];
-        let pixel = Rgb { r: 240, g: 10, b: 10 };
-        
+        let pixel = Rgb {
+            r: 240,
+            g: 10,
+            b: 10,
+        };
+
         let scalar_idx = fallback::find_nearest_color(pixel, &palette);
         let simd_idx = find_nearest_color(pixel, &palette);
-        
+
         assert_eq!(scalar_idx, simd_idx);
         assert_eq!(scalar_idx, 0); // Should be Red
     }
