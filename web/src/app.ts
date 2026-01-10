@@ -252,7 +252,7 @@ export class PixieApp extends LitElement {
     return html`
       <div class="modal-overlay" @click=${() => this.showHelp = false}>
         <div class="modal" @click=${(e: any) => e.stopPropagation()}>
-          <h2>Pixie Sauce Optimization Guide</h2>
+          <h2>Pixie Dust Optimization Guide</h2>
           <p><strong>QUALITY:</strong> K-Means iterations. Higher values (15-20) produce better color clusters at the cost of processing time.</p>
           <p><strong>LOSSY:</strong> Advanced Fuzzy LZW matching. Values > 0 allow the encoder to match "visually similar" colors, dramatically reducing file size (up to 40%).</p>
           <p><strong>FUZZY:</strong> Temporal transparency threshold. Pixels that haven't changed "enough" since the last frame are treated as transparent.</p>
