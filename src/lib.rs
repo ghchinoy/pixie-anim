@@ -16,14 +16,14 @@ pub mod delta;
 pub mod error;
 /// GIF89a Structure and Writing.
 pub mod gif;
-/// LZW Encoder for GIF89a.
 pub mod lzw;
-/// Quantization algorithms for GIF.
 pub mod quant;
-/// SIMD acceleration module for performance-critical operations.
 pub mod simd;
 
-/// Common utilities for CLI tools.
+/// High-level optimization engine.
+#[cfg(feature = "image")]
+pub mod engine;
+
 #[cfg(feature = "cli")]
 pub mod common;
 

@@ -1,5 +1,5 @@
 use clap::Parser;
-use pixie_anim_lib::common::{optimize_sequence, OptimizationOptions};
+use pixie_anim_lib::engine::{optimize_sequence, OptimizationOptions};
 use pixie_anim_lib::evaluation::Judge;
 use pixie_anim_lib::quant::DitherType;
 use std::fs;

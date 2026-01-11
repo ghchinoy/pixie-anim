@@ -1,4 +1,4 @@
-use pixie_anim_lib::common::{optimize_sequence, OptimizationOptions};
+use pixie_anim_lib::engine::{optimize_sequence, OptimizationOptions};
 use pixie_anim_lib::quant::DitherType;
 use std::fs::File;
 use std::io::Write;
