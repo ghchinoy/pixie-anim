@@ -23,10 +23,6 @@ struct Cli {
     #[arg(short, long)]
     name: String,
 
-    /// Output report file (Markdown)
-    #[arg(short, long)]
-    report: Option<PathBuf>,
-
     /// Quality (iterations for K-Means, default 5)
     #[arg(short, long, default_value = "5")]
     quality: usize,
@@ -42,6 +38,14 @@ struct Cli {
     /// Dithering type: none, floyd, blue, ordered
     #[arg(long, default_value = "floyd")]
     dither: String,
+
+    /// Custom notes for this run
+    #[arg(long)]
+    notes: Option<String>,
+
+    /// Skip report generation
+    #[arg(long)]
+    no_report: bool,
 
     /// Cleanup frames after benchmark
     #[arg(long)]
@@ -90,7 +94,7 @@ fn extract_frames(input: &Path, test_name: &str) -> PathBuf {
             ])
             .output()
             .expect("Failed to execute ffmpeg");
-        
+
         if !output.status.success() {
             eprintln!("❌ ffmpeg extraction failed:");
             eprintln!("{}", String::from_utf8_lossy(&output.stderr));
@@ -148,7 +152,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📸 Found {} frames", frame_paths.len());
 
     if frame_paths.is_empty() {
-        eprintln!("❌ Error: No PNG frames found in {:?}. Ensure extraction succeeded.", frame_dir);
+        eprintln!(
+            "❌ Error: No PNG frames found in {:?}. Ensure extraction succeeded.",
+            frame_dir
+        );
         std::process::exit(1);
     }
 
@@ -352,13 +359,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    if let Some(report_path) = cli.report {
-        let mut f = fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(report_path)?;
-        writeln!(f, "## Benchmark: {} ({})", cli.name, chrono::Local::now())?;
+    if !cli.no_report {
+        let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        let report_filename = format!("tests/reports/{}_{}.md", timestamp, cli.name);
+        let mut f = fs::File::create(&report_filename)?;
+        
+        writeln!(f, "# Benchmark Report: {}", cli.name)?;
+        writeln!(f, "Date: {}", chrono::Local::now())?;
         writeln!(f, "Input: {:?}", cli.input)?;
+        if let Some(notes) = cli.notes {
+            writeln!(f, "\n### Notes\n{}", notes)?;
+        }
+        writeln!(f, "\n### Parameters\n- Quality: {}\n- Lossy: {}\n- Fuzz: {}\n- Dither: {}", cli.quality, cli.lossy, cli.fuzz, cli.dither)?;
+        
         writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score | SSIM | PSNR |")?;
         writeln!(f, "|------|----------|-----------|-------|------|------|")?;
         for r in &results {
@@ -372,7 +385,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for r in &results {
             writeln!(f, "**{}**: {}\n", r.name, r.reasoning)?;
         }
-        writeln!(f, "\n---\n")?;
+        
+        // Update master log
+        let master_log = "tests/benchmarks.md";
+        let mut master_file = fs::OpenOptions::new().create(true).append(true).open(master_log)?;
+        if fs::metadata(master_log)?.len() == 0 {
+            writeln!(master_file, "# Pixie-Anim Master Benchmark Log\n")?;
+            writeln!(master_file, "| Date | Name | Pixie Size | Score | SSIM | Report |")?;
+            writeln!(master_file, "|------|------|------------|-------|------|--------|")?;
+        }
+        
+        let pixie = &results[0];
+        writeln!(master_file, "| {} | {} | {:.2} KB | {:.1} | {:.3} | [Detail]({})", 
+            chrono::Local::now().format("%Y-%m-%d"),
+            cli.name,
+            pixie.size_kb,
+            pixie.score,
+            pixie.ssim,
+            report_filename
+        )?;
+        
+        println!("\n📝 Detailed report saved to: {}", report_filename);
     }
 
     if cli.cleanup && is_video {
