@@ -35,15 +35,28 @@ digraph G {
         
         Zeng [label="Zeng Palette\nReordering"];
         
-        Delta [label="Delta Engine\n(Fuzzy + Bounding Box)"];
+        Delta [label="Delta Engine\n(Temporal Denoising + BB)"];
+
+        Dither [label="Perceptual Dithering\n(Blue Noise / Ordered)"];
         
         LZW [label="LZW Encoder\n(Lossy Neighbor Match)"];
         
         // Logical flow inside core
-        Sampler -> KMeans [label="10% Pixels"];
+        Sampler -> KMeans [label="5% Samples"];
         KMeans -> Zeng [label="Raw Palette"];
-        Zeng -> Delta [label="Global Palette"];
-        Delta -> LZW [label="Dithered Indices"];
+        Zeng -> Dither [label="Global Palette"];
+        Dither -> Delta [label="Dithered Full Frames"];
+        Delta -> LZW [label="Denoised Indices"];
+    }
+
+    subgraph cluster_bench {
+        label = "Benchmarking Suite";
+        style=dotted;
+        PixieBench [label="pixie-bench (CLI)"];
+        Judge [label="Gemini Subjective Judge"];
+        
+        PixieBench -> Judge [label="Generated GIFs"];
+        Judge -> PixieBench [label="Quality Scores"];
     }
 
     Extractor -> WasmBindgen [label="RGBA Buffers"];
@@ -51,4 +64,7 @@ digraph G {
     WasmBindgen -> Sampler;
     LZW -> WasmBindgen [label="GIF Bytes"];
     WasmBindgen -> Viewer [label="Blob URL"];
+
+    // External CLI path
+    PixieBench -> Sampler [label="Direct Library Call"];
 }

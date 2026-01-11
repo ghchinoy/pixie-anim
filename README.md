@@ -23,22 +23,23 @@ Inspired by Lee Robinson's [pixo](https://github.com/leerob/pixo), Pixie-Anim fo
 ## 🚀 Key Features
 
 - **Zero-Dependency Core**: From-scratch implementation of GIF89a and LZW.
-- **Superior Compression**: Achieves **20-30% smaller** files than Gifsicle -O3 through advanced heuristics.
+- **Superior Compression**: Achieves **30-50% smaller** files than Gifsicle -O3 through advanced heuristics.
 - **Perceptual Quantization**: Uses CIELAB color space and K-Means++ for superior color fidelity.
-- **Fuzzy Delta Compression**: Temporal denoising that treats "nearly identical" pixels as transparent, dramatically reducing size for real-world video.
-- **Parallelized & SIMD**: Multi-threaded quantization via Rayon and Planar AVX2 kernels for nearest-color search.
+- **Temporal Denoising**: Index-reuse logic that treats temporal noise as negligible, dramatically reducing size for real-world video.
+- **Stable Dithering**: Choice of **Ordered (Bayer)** or **Blue Noise** dithering to eliminate spatial "shimmer."
+- **Parallelized & SIMD**: Multi-threaded quantization via Rayon and Planar AVX2/NEON kernels for nearest-color search.
 - **WASM Playground**: Fully functional, client-side optimizer with direct MP4-to-GIF support.
 - **Subjective LLM Judge**: Automated quality evaluation via Gemini 3 Flash.
 
-## 📊 Performance Matrix (720p HD)
+## 📊 Performance Matrix (Space Waves - 720p)
 
-| Tool | Mode | Speed (per frame) | Size (KB) | Subjective (1-10) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Gifsicle -O3** | Standard | ~123ms | 76,312 | - |
-| **FFmpeg** | 2-Pass HQ | ~270ms | 78,340 | - |
-| **Pixie-Anim** | **Quality/Lossy**| **~110ms** | **66,620** | **7** |
+| Tool | Mode | Size (KB) | Subjective Score (1-10) |
+| :--- | :--- | :--- | :--- |
+| **Gifsicle -O3** | Standard | 19,034 | 6 |
+| **FFmpeg** | 2-Pass HQ | 19,290 | 6 |
+| **Pixie-Anim** | **Quality/Lossy**| **9,821** | **7** |
 
-*Benchmarked on an 8-second high-motion drone sequence. Pixie-Anim provides a significant size advantage while maintaining competitive speed.*
+*Benchmarked on the high-complexity "Space Waves" sequence (Veo 3.1). Pixie-Anim provides a massive size advantage while improving visual stability through Ordered Dithering.*
 
 ## 🧠 Algorithms
 
