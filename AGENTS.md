@@ -89,6 +89,10 @@ To improve Pixie-Anim's visual quality score, follow this iterative protocol:
    ```
 4. **Target Score**: Goal is a Subjective Score >= 7.0 while maintaining a size advantage of >30% over Gifsicle.
 
+## Core Algorithm Refinements
+
+- **Temporal Denoising**: We use "Cross-Frame Palette Re-indexing" (The Lazy Rule). If a pixel's color is within `fuzz / 2` of the previous frame's color at that coordinate, we reuse the previous palette index. This dramatically improves LZW compression and eliminates "shimmering" artifacts.
+- **Perceptual Dithering**: Always perform dithering in CIELAB space. We cap error diffusion at 75% strength to prevent excessive grain.
 
 ## Landing the Plane (Session Completion)
 
