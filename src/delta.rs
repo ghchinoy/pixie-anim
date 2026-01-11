@@ -27,13 +27,21 @@ fn rgb_dist_sq(c1: Rgb, c2: Rgb) -> u32 {
 }
 
 /// Options for delta compression.
+/// Options for configuring the delta compression engine.
 pub struct DeltaOptions<'a> {
+    /// Width of the frame.
     pub width: u16,
+    /// Height of the frame.
     pub height: u16,
+    /// The global palette to use for indexing.
     pub palette: &'a [Rgb],
+    /// The index to use for transparent pixels.
     pub transparent_idx: u8,
+    /// Squared perceptual threshold for "fuzzy" equality.
     pub fuzz_threshold: u32,
+    /// Type of dithering to apply to opaque pixels.
     pub dither: DitherType,
+    /// Strength of the dithering effect (0.0 to 1.0).
     pub dither_strength: f32,
 }
 

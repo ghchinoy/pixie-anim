@@ -13,7 +13,7 @@ use std::process::Command;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Define paths
-    let input_video = "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4";
+    let input_video = "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-180432-0.mp4";
     let output_gif = "video_optimization_result.gif";
     let temp_dir = Path::new("temp_frames_example");
 

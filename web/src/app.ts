@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import init, { encodeGif, decodeGif } from './lib/pixie-wasm/pixie.js';
+import init, { encodeGif, decode_gif } from './lib/pixie-wasm/pixie.js';
 import { FrameExtractor } from './lib/video-engine/FrameExtractor.js';
 
 @customElement('pixie-app')
@@ -139,6 +139,7 @@ export class PixieApp extends LitElement {
   @state() private lossy = 8;
   @state() private fuzz = 10;
   @state() private dither = 3; // Default to Ordered (Bayer)
+  @state() private ditherStrength = 0.75;
 
   async firstUpdated() {
     await init();
@@ -201,6 +202,11 @@ export class PixieApp extends LitElement {
               <option value="2" ?selected=${this.dither === 2}>BLUE</option>
               <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
             </select>
+          </div>
+          <div class="control-group">
+            <label>STRENGTH</label>
+            <input type="range" min="0" max="100" .value=${this.ditherStrength * 100} @input=${(e: any) => this.ditherStrength = parseInt(e.target.value) / 100}>
+            <span style="min-width: 25px">${Math.round(this.ditherStrength * 100)}%</span>
           </div>
           ${this.sourceBuffer ? html`
             <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
@@ -344,7 +350,7 @@ export class PixieApp extends LitElement {
       if (file.type === 'image/gif') {
         this.status = 'DECODING GIF...';
         const arrayBuffer = await file.arrayBuffer();
-        const rawData = decodeGif(new Uint8Array(arrayBuffer));
+        const rawData = decode_gif(new Uint8Array(arrayBuffer));
         
         const view = new DataView(rawData.buffer, rawData.byteOffset, rawData.byteLength);
         this.sourceWidth = view.getUint16(0, true);
@@ -505,7 +511,7 @@ export class PixieApp extends LitElement {
 
     try {
       const startTime = performance.now();
-      const gifBytes = encodeGif(buffer, width, height, numFrames, this.fps, this.quality, this.lossy, this.fuzz, this.dither);
+      const gifBytes = encodeGif(buffer, width, height, numFrames, this.fps, this.quality, this.lossy, this.fuzz, this.dither, this.ditherStrength);
       this.timeTaken = performance.now() - startTime;
       console.log(`✅ WASM Encoding took ${this.timeTaken}ms`);
 

@@ -1,75 +1,41 @@
-//! WebAssembly bindings for Pixie-Anim.
-
-#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
-#[global_allocator]
-static ALLOC: talc::TalckWasm = unsafe { talc::TalckWasm::new_global() };
-
-use crate::delta::DeltaOptions;
-use crate::gif::{GifOptions, GifWriter, ImageDescriptor};
-use crate::quant::{DitherType, KMeansQuantizer, Quantizer, Rgb};
-use image::AnimationDecoder;
-use image::codecs::gif::GifDecoder;
 use wasm_bindgen::prelude::*;
+use crate::quant::{Rgb, DitherType, Quantizer};
+use crate::gif::{GifWriter, GifOptions, ImageDescriptor};
+use crate::delta::{DeltaOptions};
 
-/// Decodes a GIF into raw RGBA pixels.
-/// Returns [width, height, num_frames, ...pixels]
-#[wasm_bindgen(js_name = "decodeGif")]
+/// Decodes a GIF buffer into raw RGBA frames and metadata.
+#[wasm_bindgen]
 pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
-    let decoder = GifDecoder::new(data).map_err(|e| JsError::new(&e.to_string()))?;
-    let frames = decoder
-        .into_frames()
-        .collect_frames()
-        .map_err(|e| JsError::new(&e.to_string()))?;
+    let mut decoder = gif_crate::DecodeOptions::new();
+    decoder.set_color_output(gif_crate::ColorOutput::RGBA);
+    let mut reader = decoder.read_info(data).map_err(|e| JsError::new(&e.to_string()))?;
+    
+    let width = reader.width();
+    let height = reader.height();
+    let mut frames = Vec::new();
+    let mut total_delay = 0;
+    let mut count = 0;
 
-    if frames.is_empty() {
-        return Err(JsError::new("No frames found in GIF"));
+    while let Some(frame) = reader.read_next_frame().map_err(|e| JsError::new(&e.to_string()))? {
+        frames.extend_from_slice(&frame.buffer);
+        total_delay += frame.delay;
+        count += 1;
     }
 
-    let width = frames[0].buffer().width() as u16;
-    let height = frames[0].buffer().height() as u16;
-    let num_frames = frames.len() as u32;
-
-    // Calculate average delay
-    let total_delay: u32 = frames
-        .iter()
-        .map(|f| {
-            let (num, den) = f.delay().numer_denom_ms();
-            if den == 0 {
-                0
-            } else {
-                num / den
-            }
-        })
-        .sum();
-    let avg_delay_ms = (total_delay / num_frames).max(10); // Minimum 10ms (100fps)
-
-    let mut output = Vec::new();
-    // Metadata header for JS: [width(2), height(2), num_frames(4), avg_delay_ms(4)]
-    output.extend_from_slice(&width.to_le_bytes());
-    output.extend_from_slice(&height.to_le_bytes());
-    output.extend_from_slice(&num_frames.to_le_bytes());
-    output.extend_from_slice(&avg_delay_ms.to_le_bytes());
-
-    for frame in frames {
-        output.extend_from_slice(frame.buffer().as_raw());
-    }
-
-    Ok(output)
+    let avg_delay = if count > 0 { total_delay / count * 10 } else { 0 };
+    
+    let mut result = Vec::new();
+    result.extend_from_slice(&width.to_le_bytes());
+    result.extend_from_slice(&height.to_le_bytes());
+    result.extend_from_slice(&(count as u32).to_le_bytes());
+    result.extend_from_slice(&(avg_delay as u32).to_le_bytes());
+    result.extend(frames);
+    
+    Ok(result)
 }
 
-/// Encodes a sequence of frames into an optimized GIF.
-///
-/// # Arguments
-/// * `data` - Flat buffer of RGBA pixels for all frames
-/// * `width` - Image width
-/// * `height` - Image height
-/// * `num_frames` - Number of frames in the sequence
-/// * `fps` - Target frames per second
-/// * `quality` - K-Means iterations (default 10)
-/// * `lossy` - LZW neighbor matching (0-20)
-/// * `fuzz` - Perceptual transparency threshold (0-100)
-/// * `dither` - Dithering algorithm (0=None, 1=Floyd, 2=Blue, 3=Ordered)
-#[wasm_bindgen(js_name = "encodeGif")]
+/// Encodes raw RGBA frames into an optimized GIF using the Pixie-Anim engine.
+#[wasm_bindgen(js_name = encodeGif)]
 #[allow(clippy::too_many_arguments)]
 pub fn encode_gif(
     data: &[u8],
@@ -83,7 +49,82 @@ pub fn encode_gif(
     dither: u8,
     dither_strength: f32,
 ) -> Result<Vec<u8>, JsError> {
-...
+    let dither_type = match dither {
+        1 => DitherType::FloydSteinberg,
+        2 => DitherType::BlueNoise,
+        3 => DitherType::Ordered,
+        _ => DitherType::None,
+    };
+
+    let delay = (100.0 / fps).floor() as u16;
+    let frame_size = width as usize * height as usize * 4;
+    
+    // 1. Sampling for palette
+    let mut sampled_pixels = Vec::new();
+    let sample_every = (num_frames as usize / 10).max(1);
+    
+    for f in (0..num_frames as usize).step_by(sample_every) {
+        let start = f * frame_size;
+        for i in (0..width as usize * height as usize).step_by(5) {
+            let p = start + i * 4;
+            sampled_pixels.push(Rgb { r: data[p], g: data[p+1], b: data[p+2] });
+        }
+    }
+
+    let quantizer = crate::quant::KMeansQuantizer::new(quality);
+    let result = quantizer.quantize(&sampled_pixels, 255).map_err(|e| JsError::new(&e.to_string()))?;
+    let global_palette = result.palette.colors;
+    let transparent_idx = 255u8;
+
+    let mut buffer = Vec::new();
+    let mut writer = GifWriter::new(&mut buffer);
+    let mut prev_pixels: Option<Vec<Rgb>> = None;
+    let fuzz_sq = fuzz * fuzz;
+
+    writer.write_header().map_err(|e| JsError::new(&e.to_string()))?;
+    
+    let gif_options = GifOptions {
+        width,
+        height,
+        has_global_palette: true,
+        palette_size: 8,
+    };
+    writer.write_logical_screen_descriptor(&gif_options).map_err(|e| JsError::new(&e.to_string()))?;
+    
+    let mut pal_bytes = Vec::new();
+    for p in &global_palette {
+        pal_bytes.push(p.r); pal_bytes.push(p.g); pal_bytes.push(p.b);
+    }
+    while pal_bytes.len() < 768 { pal_bytes.push(0); }
+    writer.write_global_palette(&pal_bytes).map_err(|e| JsError::new(&e.to_string()))?;
+
+    writer
+        .write_netscape_loop_block()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let mut lzw_encoder = crate::lzw::LzwEncoder::new(8);
+    lzw_encoder.lossiness = lossy;
+
+    let mut prev_full_indices: Option<Vec<u8>> = None;
+
+    for f in 0..num_frames as usize {
+        let start = f * frame_size;
+        let curr_pixels: Vec<Rgb> = (0..width as usize * height as usize)
+            .map(|i| {
+                let p = start + i * 4;
+                Rgb {
+                    r: data[p],
+                    g: data[p + 1],
+                    b: data[p + 2],
+                }
+            })
+            .collect();
+
+        if f == 0 {
+            writer
+                .write_graphic_control_extension(delay, None)
+                .map_err(|e| JsError::new(&e.to_string()))?;
+
             let indices = match dither_type {
                 DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(
                     width,
@@ -106,7 +147,7 @@ pub fn encode_gif(
                     &global_palette,
                     dither_strength,
                 ),
-...                _ => {
+                _ => {
                     #[cfg(feature = "rayon")]
                     {
                         use rayon::prelude::*;
