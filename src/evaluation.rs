@@ -125,22 +125,37 @@ Provide a 'Synthetic MOS' (Mean Opinion Score) from 1 to 10 for the overall qual
                 // 2. Calculate Objective Metrics (SSIM / PSNR)
                 // Use the extracted middle frames for objective comparison
                 let img_orig = image::open(&orig_frames[1])
-                    .map_err(|e| crate::error::Error::Internal(e.to_string()))?.to_rgb8();
+                    .map_err(|e| crate::error::Error::Internal(e.to_string()))?
+                    .to_rgb8();
                 let mut img_opt_raw = image::open(&opt_frames[1])
                     .map_err(|e| crate::error::Error::Internal(e.to_string()))?;
-                
+
                 // Resize if dimensions differ
-                if img_orig.width() != img_opt_raw.width() || img_orig.height() != img_opt_raw.height() {
-                    img_opt_raw = img_opt_raw.resize_exact(img_orig.width(), img_orig.height(), image::imageops::FilterType::Lanczos3);
+                if img_orig.width() != img_opt_raw.width()
+                    || img_orig.height() != img_opt_raw.height()
+                {
+                    img_opt_raw = img_opt_raw.resize_exact(
+                        img_orig.width(),
+                        img_orig.height(),
+                        image::imageops::FilterType::Lanczos3,
+                    );
                 }
                 let img_opt = img_opt_raw.to_rgb8();
 
-                let ssim_result = image_compare::rgb_similarity_structure(&image_compare::Algorithm::MSSIMSimple, &img_orig, &img_opt)
-                    .map_err(|e| crate::error::Error::Internal(format!("SSIM error: {:?}", e)))?;
-                
-                let rms_result = image_compare::rgb_similarity_structure(&image_compare::Algorithm::RootMeanSquared, &img_orig, &img_opt)
-                    .map_err(|e| crate::error::Error::Internal(format!("RMS error: {:?}", e)))?;
-                
+                let ssim_result = image_compare::rgb_similarity_structure(
+                    &image_compare::Algorithm::MSSIMSimple,
+                    &img_orig,
+                    &img_opt,
+                )
+                .map_err(|e| crate::error::Error::Internal(format!("SSIM error: {:?}", e)))?;
+
+                let rms_result = image_compare::rgb_similarity_structure(
+                    &image_compare::Algorithm::RootMeanSquared,
+                    &img_orig,
+                    &img_opt,
+                )
+                .map_err(|e| crate::error::Error::Internal(format!("RMS error: {:?}", e)))?;
+
                 let rms_score = rms_result.score;
                 // PSNR = 20 * log10(MAX_I / RMSE)
                 // In image-compare, RMS score is 1.0 - (RMSE / 255)

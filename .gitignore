@@ -19,4 +19,6 @@ tests/fixtures/synthetic/**
 .DS_Store
 .vscode/
 .idea/
-*.log
+*.logexample_output.gif
+video_optimization_result.gif
+temp_frames_example/

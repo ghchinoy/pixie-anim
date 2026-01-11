@@ -1,5 +1,5 @@
 //! Comprehensive example: Converting an MP4 video to an optimized GIF.
-//! 
+//!
 //! This example demonstrates:
 //! 1. Frame extraction from a video file using FFmpeg.
 //! 2. High-level sequence optimization using Pixie-Anim.
@@ -19,7 +19,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Ensure input exists
     if !Path::new(input_video).exists() {
-        println!("Skipping example: This example requires the video file at {}", input_video);
+        println!(
+            "Skipping example: This example requires the video file at {}",
+            input_video
+        );
         return Ok(());
     }
 
@@ -33,8 +36,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let status = Command::new("ffmpeg")
         .args([
             "-y",
-            "-i", input_video,
-            "-vf", "fps=15,scale=640:-1",
+            "-i",
+            input_video,
+            "-vf",
+            "fps=15,scale=640:-1",
             &format!("{}/frame%03d.png", temp_dir.to_str().unwrap()),
         ])
         .status()?;
@@ -55,12 +60,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 4. Configure Pixie-Anim
     let options = OptimizationOptions {
-        quality: 15,            // Higher quality sampling
-        fps: 15.0,              // Must match the extraction FPS
+        quality: 15,                   // Higher quality sampling
+        fps: 15.0,                     // Must match the extraction FPS
         dither: DitherType::BlueNoise, // High-quality film grain look
-        dither_strength: 0.75,  // Balanced grain intensity
-        lossy: 8,               // 8% lossiness for great compression
-        fuzz: 10,               // Moderate temporal denoising
+        dither_strength: 0.75,         // Balanced grain intensity
+        lossy: 8,                      // 8% lossiness for great compression
+        fuzz: 10,                      // Moderate temporal denoising
     };
 
     // 5. Optimize the sequence

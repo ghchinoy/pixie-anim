@@ -47,14 +47,14 @@ pub struct DeltaOptions<'a> {
 
 /// Finds the smallest bounding box and maps pixels to transparent if they are "close enough"
 /// to the previous frame's color.
-/// 
+///
 /// # Arguments
 /// * `curr_pixels` - Pixels of the current frame
 /// * `prev_pixels` - Pixels of the previous frame
 /// * `prev_indices` - Palette indices used in the previous frame at these coordinates
 /// * `options` - Delta compression configuration
 pub fn find_delta_fuzzy(
-    curr_pixels: &[Rgb], 
+    curr_pixels: &[Rgb],
     prev_pixels: &[Rgb],
     prev_indices: Option<&[u8]>,
     options: &DeltaOptions,
@@ -62,7 +62,7 @@ pub fn find_delta_fuzzy(
     if curr_pixels.len() != prev_pixels.len() {
         return None;
     }
-    
+
     let mut min_x = options.width;
     let mut max_x = 0;
     let mut min_y = options.height;
@@ -99,10 +99,11 @@ pub fn find_delta_fuzzy(
     let delta_height = max_y - min_y + 1;
 
     // 2. Map pixels to indices
-    
+
     // Prepare Blue Noise if needed
     let lab_palette = if options.dither == DitherType::BlueNoise {
-        let lp: Vec<crate::color::Lab> = options.palette
+        let lp: Vec<crate::color::Lab> = options
+            .palette
             .iter()
             .map(|p| crate::color::rgb_to_lab(p.r, p.g, p.b))
             .collect();
@@ -127,14 +128,16 @@ pub fn find_delta_fuzzy(
                     options.transparent_idx
                 } else {
                     // TEMPORAL DENOISING:
-                    // If we used an index in the previous frame, check if that same color 
+                    // If we used an index in the previous frame, check if that same color
                     // is "close enough" to our current pixel. Reusing indices is LZW-friendly.
                     if let Some(prev_idx_buffer) = prev_indices {
                         let prev_idx = prev_idx_buffer[idx];
                         if prev_idx != options.transparent_idx {
                             let prev_color = options.palette[prev_idx as usize];
                             // Use a tighter threshold for index-reuse than for transparency
-                            if rgb_dist_sq(curr_pixels[idx], prev_color) <= options.fuzz_threshold / 2 {
+                            if rgb_dist_sq(curr_pixels[idx], prev_color)
+                                <= options.fuzz_threshold / 2
+                            {
                                 return prev_idx;
                             }
                         }
@@ -143,8 +146,11 @@ pub fn find_delta_fuzzy(
                     match options.dither {
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {
-                                let (ol, oa, ob) =
-                                    crate::quant::dither::get_blue_noise_offset(x, y, options.dither_strength);
+                                let (ol, oa, ob) = crate::quant::dither::get_blue_noise_offset(
+                                    x,
+                                    y,
+                                    options.dither_strength,
+                                );
                                 let p = curr_pixels[idx];
                                 let mut lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
                                 lab.l = (lab.l + ol).clamp(0.0, 100.0);
@@ -152,10 +158,13 @@ pub fn find_delta_fuzzy(
                                 lab.b = (lab.b + ob).clamp(-128.0, 127.0);
                                 crate::simd::find_nearest_color_lab(lab, pp) as u8
                             } else {
-                                crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8
+                                crate::simd::find_nearest_color(curr_pixels[idx], options.palette)
+                                    as u8
                             }
                         }
-                        _ => crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8,
+                        _ => {
+                            crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8
+                        }
                     }
                 }
             })
@@ -176,7 +185,9 @@ pub fn find_delta_fuzzy(
                         let prev_idx = prev_idx_buffer[idx];
                         if prev_idx != options.transparent_idx {
                             let prev_color = options.palette[prev_idx as usize];
-                            if rgb_dist_sq(curr_pixels[idx], prev_color) <= options.fuzz_threshold / 2 {
+                            if rgb_dist_sq(curr_pixels[idx], prev_color)
+                                <= options.fuzz_threshold / 2
+                            {
                                 return prev_idx;
                             }
                         }
@@ -185,8 +196,11 @@ pub fn find_delta_fuzzy(
                     match options.dither {
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {
-                                let (ol, oa, ob) =
-                                    crate::quant::dither::get_blue_noise_offset(x, y, options.dither_strength);
+                                let (ol, oa, ob) = crate::quant::dither::get_blue_noise_offset(
+                                    x,
+                                    y,
+                                    options.dither_strength,
+                                );
                                 let p = curr_pixels[idx];
                                 let mut lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
                                 lab.l = (lab.l + ol).clamp(0.0, 100.0);
@@ -194,10 +208,13 @@ pub fn find_delta_fuzzy(
                                 lab.b = (lab.b + ob).clamp(-128.0, 127.0);
                                 crate::simd::find_nearest_color_lab(lab, pp) as u8
                             } else {
-                                crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8
+                                crate::simd::find_nearest_color(curr_pixels[idx], options.palette)
+                                    as u8
                             }
                         }
-                        _ => crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8,
+                        _ => {
+                            crate::simd::find_nearest_color(curr_pixels[idx], options.palette) as u8
+                        }
                     }
                 }
             })

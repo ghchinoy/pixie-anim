@@ -1,36 +1,45 @@
+use crate::delta::DeltaOptions;
+use crate::gif::{GifOptions, GifWriter, ImageDescriptor};
+use crate::quant::{DitherType, Quantizer, Rgb};
 use wasm_bindgen::prelude::*;
-use crate::quant::{Rgb, DitherType, Quantizer};
-use crate::gif::{GifWriter, GifOptions, ImageDescriptor};
-use crate::delta::{DeltaOptions};
 
 /// Decodes a GIF buffer into raw RGBA frames and metadata.
 #[wasm_bindgen]
 pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
     let mut decoder = gif_crate::DecodeOptions::new();
     decoder.set_color_output(gif_crate::ColorOutput::RGBA);
-    let mut reader = decoder.read_info(data).map_err(|e| JsError::new(&e.to_string()))?;
-    
+    let mut reader = decoder
+        .read_info(data)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
     let width = reader.width();
     let height = reader.height();
     let mut frames = Vec::new();
     let mut total_delay = 0;
     let mut count = 0;
 
-    while let Some(frame) = reader.read_next_frame().map_err(|e| JsError::new(&e.to_string()))? {
+    while let Some(frame) = reader
+        .read_next_frame()
+        .map_err(|e| JsError::new(&e.to_string()))?
+    {
         frames.extend_from_slice(&frame.buffer);
         total_delay += frame.delay;
         count += 1;
     }
 
-    let avg_delay = if count > 0 { total_delay / count * 10 } else { 0 };
-    
+    let avg_delay = if count > 0 {
+        total_delay / count * 10
+    } else {
+        0
+    };
+
     let mut result = Vec::new();
     result.extend_from_slice(&width.to_le_bytes());
     result.extend_from_slice(&height.to_le_bytes());
     result.extend_from_slice(&(count as u32).to_le_bytes());
     result.extend_from_slice(&(avg_delay as u32).to_le_bytes());
     result.extend(frames);
-    
+
     Ok(result)
 }
 
@@ -58,21 +67,27 @@ pub fn encode_gif(
 
     let delay = (100.0 / fps).floor() as u16;
     let frame_size = width as usize * height as usize * 4;
-    
+
     // 1. Sampling for palette
     let mut sampled_pixels = Vec::new();
     let sample_every = (num_frames as usize / 10).max(1);
-    
+
     for f in (0..num_frames as usize).step_by(sample_every) {
         let start = f * frame_size;
         for i in (0..width as usize * height as usize).step_by(5) {
             let p = start + i * 4;
-            sampled_pixels.push(Rgb { r: data[p], g: data[p+1], b: data[p+2] });
+            sampled_pixels.push(Rgb {
+                r: data[p],
+                g: data[p + 1],
+                b: data[p + 2],
+            });
         }
     }
 
     let quantizer = crate::quant::KMeansQuantizer::new(quality);
-    let result = quantizer.quantize(&sampled_pixels, 255).map_err(|e| JsError::new(&e.to_string()))?;
+    let result = quantizer
+        .quantize(&sampled_pixels, 255)
+        .map_err(|e| JsError::new(&e.to_string()))?;
     let global_palette = result.palette.colors;
     let transparent_idx = 255u8;
 
@@ -81,22 +96,32 @@ pub fn encode_gif(
     let mut prev_pixels: Option<Vec<Rgb>> = None;
     let fuzz_sq = fuzz * fuzz;
 
-    writer.write_header().map_err(|e| JsError::new(&e.to_string()))?;
-    
+    writer
+        .write_header()
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
     let gif_options = GifOptions {
         width,
         height,
         has_global_palette: true,
         palette_size: 8,
     };
-    writer.write_logical_screen_descriptor(&gif_options).map_err(|e| JsError::new(&e.to_string()))?;
-    
+    writer
+        .write_logical_screen_descriptor(&gif_options)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
     let mut pal_bytes = Vec::new();
     for p in &global_palette {
-        pal_bytes.push(p.r); pal_bytes.push(p.g); pal_bytes.push(p.b);
+        pal_bytes.push(p.r);
+        pal_bytes.push(p.g);
+        pal_bytes.push(p.b);
     }
-    while pal_bytes.len() < 768 { pal_bytes.push(0); }
-    writer.write_global_palette(&pal_bytes).map_err(|e| JsError::new(&e.to_string()))?;
+    while pal_bytes.len() < 768 {
+        pal_bytes.push(0);
+    }
+    writer
+        .write_global_palette(&pal_bytes)
+        .map_err(|e| JsError::new(&e.to_string()))?;
 
     writer
         .write_netscape_loop_block()
@@ -187,8 +212,8 @@ pub fn encode_gif(
                 dither_strength,
             };
             if let Some(delta) = crate::delta::find_delta_fuzzy(
-                &curr_pixels, 
-                prev, 
+                &curr_pixels,
+                prev,
                 prev_full_indices.as_deref(),
                 &delta_options,
             ) {
@@ -205,14 +230,15 @@ pub fn encode_gif(
                 writer
                     .write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)
                     .map_err(|e| JsError::new(&e.to_string()))?;
-                
+
                 // Update full indices for the next frame
                 if let Some(ref mut full_indices) = prev_full_indices {
                     for dy in 0..delta.height {
                         for dx in 0..delta.width {
                             let global_x = delta.x + dx;
                             let global_y = delta.y + dy;
-                            let global_idx = (global_y as usize * width as usize) + global_x as usize;
+                            let global_idx =
+                                (global_y as usize * width as usize) + global_x as usize;
                             let local_idx = (dy as usize * delta.width as usize) + dx as usize;
                             if delta.indices[local_idx] != transparent_idx {
                                 full_indices[global_idx] = delta.indices[local_idx];

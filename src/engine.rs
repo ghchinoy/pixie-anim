@@ -1,10 +1,10 @@
 //! High-level optimization engine for sequence processing.
 
+use crate::delta::DeltaOptions;
 use crate::error::Result;
 use crate::gif::{GifOptions, GifWriter, ImageDescriptor};
 use crate::lzw::LzwEncoder;
 use crate::quant::{DitherType, KMeansQuantizer, Quantizer, Rgb};
-use crate::delta::DeltaOptions;
 use image::GenericImageView;
 use std::path::PathBuf;
 
@@ -27,21 +27,28 @@ pub struct OptimizationOptions {
 /// Optimizes a sequence of images into a single GIF buffer.
 pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> Result<Vec<u8>> {
     if inputs.is_empty() {
-        return Err(crate::error::Error::Internal("No input images provided for optimization".to_string()));
+        return Err(crate::error::Error::Internal(
+            "No input images provided for optimization".to_string(),
+        ));
     }
     let delay = (100.0 / options.fps).floor() as u16;
-    
+
     // 1. Sampling for palette
     let mut sampled_pixels = Vec::new();
     let sample_every = (inputs.len() / 20).max(1); // Sample up to 20 frames
-    
+
     for (i, input_path) in inputs.iter().enumerate() {
         if i % sample_every == 0 {
-            let img = image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
+            let img = image::open(input_path)
+                .map_err(|e| crate::error::Error::Internal(e.to_string()))?;
             let rgb = img.to_rgb8();
             // Sample every 5th pixel (20%) for better coverage in complex scenes
             for p in rgb.pixels().step_by(5) {
-                sampled_pixels.push(Rgb { r: p[0], g: p[1], b: p[2] });
+                sampled_pixels.push(Rgb {
+                    r: p[0],
+                    g: p[1],
+                    b: p[2],
+                });
             }
         }
     }
@@ -59,9 +66,10 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
     let fuzz_sq = options.fuzz * options.fuzz;
 
     writer.write_header()?;
-    let first_img = image::open(&inputs[0]).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
+    let first_img =
+        image::open(&inputs[0]).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
     let (width, height) = first_img.dimensions();
-    
+
     let gif_options = GifOptions {
         width: width as u16,
         height: height as u16,
@@ -69,12 +77,16 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
         palette_size: 8,
     };
     writer.write_logical_screen_descriptor(&gif_options)?;
-    
+
     let mut pal_bytes = Vec::new();
     for p in &global_palette {
-        pal_bytes.push(p.r); pal_bytes.push(p.g); pal_bytes.push(p.b);
+        pal_bytes.push(p.r);
+        pal_bytes.push(p.g);
+        pal_bytes.push(p.b);
     }
-    while pal_bytes.len() < 768 { pal_bytes.push(0); }
+    while pal_bytes.len() < 768 {
+        pal_bytes.push(0);
+    }
     writer.write_global_palette(&pal_bytes)?;
 
     writer.write_netscape_loop_block()?;
@@ -82,29 +94,56 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
     let mut prev_full_indices: Option<Vec<u8>> = None;
 
     for (i, input_path) in inputs.iter().enumerate() {
-        let img = image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
-        let curr_pixels: Vec<Rgb> = img.to_rgb8().pixels()
-            .map(|p| Rgb { r: p[0], g: p[1], b: p[2] })
+        let img =
+            image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
+        let curr_pixels: Vec<Rgb> = img
+            .to_rgb8()
+            .pixels()
+            .map(|p| Rgb {
+                r: p[0],
+                g: p[1],
+                b: p[2],
+            })
             .collect();
 
         if i == 0 {
             writer.write_graphic_control_extension(delay, None)?;
-            
+
             let indices = match options.dither {
-                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
-                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
-                DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
+                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(
+                    width as u16,
+                    height as u16,
+                    &curr_pixels,
+                    &global_palette,
+                    options.dither_strength,
+                ),
+                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(
+                    width as u16,
+                    height as u16,
+                    &curr_pixels,
+                    &global_palette,
+                    options.dither_strength,
+                ),
+                DitherType::Ordered => crate::quant::dither::dither_ordered(
+                    width as u16,
+                    height as u16,
+                    &curr_pixels,
+                    &global_palette,
+                    options.dither_strength,
+                ),
                 DitherType::None => {
                     #[cfg(feature = "rayon")]
                     {
                         use rayon::prelude::*;
-                        curr_pixels.par_iter()
+                        curr_pixels
+                            .par_iter()
                             .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
                             .collect()
                     }
                     #[cfg(not(feature = "rayon"))]
                     {
-                        curr_pixels.iter()
+                        curr_pixels
+                            .iter()
                             .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
                             .collect()
                     }
@@ -130,8 +169,8 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
                 dither_strength: options.dither_strength,
             };
             if let Some(delta) = crate::delta::find_delta_fuzzy(
-                &curr_pixels, 
-                prev, 
+                &curr_pixels,
+                prev,
                 prev_full_indices.as_deref(),
                 &delta_options,
             ) {
@@ -144,14 +183,15 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
                     lzw_min_code_size: 8,
                 };
                 writer.write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)?;
-                
+
                 // Update full indices for the next frame
                 if let Some(ref mut full_indices) = prev_full_indices {
                     for y in 0..delta.height {
                         for x in 0..delta.width {
                             let global_x = delta.x + x;
                             let global_y = delta.y + y;
-                            let global_idx = (global_y as usize * width as usize) + global_x as usize;
+                            let global_idx =
+                                (global_y as usize * width as usize) + global_x as usize;
                             let local_idx = (y as usize * delta.width as usize) + x as usize;
                             if delta.indices[local_idx] != transparent_idx {
                                 full_indices[global_idx] = delta.indices[local_idx];
@@ -163,7 +203,7 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
         }
         prev_pixels = Some(curr_pixels);
     }
-    
+
     writer.write_trailer()?;
     Ok(buffer)
 }

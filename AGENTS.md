@@ -89,6 +89,18 @@ To improve Pixie-Anim's visual quality score, follow this iterative protocol:
    ```
 4. **Target Score**: Goal is a Subjective Score >= 7.0 while maintaining a size advantage of >30% over Gifsicle.
 
+## Pre-Publishing Quality Gate (Checklist)
+
+Before any `cargo publish`, the following sequence MUST be executed and verified:
+
+1.  **Version Bump**: Update `Cargo.toml` version string (e.g., `0.1.x`).
+2.  **Linting**: Run `cargo clippy --all-features` and fix all warnings.
+3.  **Formatting**: Run `cargo fmt` to ensure standard style.
+4.  **Unit Tests**: Run `cargo test --all-features` to verify logic integrity.
+5.  **WASM Build**: Run `npm run build-wasm` in the `web/` directory to verify bindings and WASM stability.
+6.  **Examples**: Verify all examples compile: `cargo check --examples --all-features`.
+7.  **Dry Run**: Execute `cargo publish --dry-run` to catch metadata or manifest issues.
+
 ## Core Algorithm Refinements
 
 - **Temporal Denoising**: We use "Cross-Frame Palette Re-indexing" (The Lazy Rule). If a pixel's color is within `fuzz / 2` of the previous frame's color at that coordinate, we reuse the previous palette index. This dramatically improves LZW compression and eliminates "shimmering" artifacts.

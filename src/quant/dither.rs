@@ -62,7 +62,13 @@ const BLUE_NOISE_32: [u8; 1024] = [
 ];
 
 /// Applies perceptual Floyd-Steinberg dithering to a frame.
-pub fn dither_floyd_steinberg(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
+pub fn dither_floyd_steinberg(
+    width: u16,
+    height: u16,
+    pixels: &[Rgb],
+    palette: &[Rgb],
+    strength: f32,
+) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
@@ -122,7 +128,13 @@ const BAYER_8X8: [u8; 64] = [
 ];
 
 /// Applies Ordered Dithering (Bayer 8x8) to a frame.
-pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
+pub fn dither_ordered(
+    width: u16,
+    height: u16,
+    pixels: &[Rgb],
+    palette: &[Rgb],
+    strength: f32,
+) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
@@ -154,7 +166,13 @@ pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], 
 }
 
 /// Applies Blue Noise dithering to a frame.
-pub fn dither_blue_noise(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
+pub fn dither_blue_noise(
+    width: u16,
+    height: u16,
+    pixels: &[Rgb],
+    palette: &[Rgb],
+    strength: f32,
+) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];

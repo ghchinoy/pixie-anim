@@ -1,6 +1,6 @@
 use clap::Parser;
 use pixie_anim_lib::engine::{optimize_sequence, OptimizationOptions};
-use pixie_anim_lib::quant::{DitherType, Rgb};
+use pixie_anim_lib::quant::DitherType;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -24,10 +24,13 @@ struct Cli {
     /// Dithering type: none, floyd, blue, ordered
     #[arg(short, long, default_value = "floyd")]
     dither: String,
+    /// Dithering strength (0.0 to 1.0, default 0.75)
+    #[arg(long, default_value = "0.75")]
+    dither_strength: f32,
     /// LZW Lossiness (0-20, higher = smaller file but more artifacts)
     #[arg(short, long, default_value = "0")]
     lossy: u8,
-    /// Perceptual transparency threshold (0-100, default 5)
+    /// Perceptual transparency threshold (0-100)
     #[arg(short, long, default_value = "5")]
     fuzz: u32,
 }
@@ -36,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     let start = Instant::now();
-    let delay = (100.0 / cli.fps).floor() as u16;
+    let delay = (100.0f32 / cli.fps).floor() as u16;
 
     let dither_type = match cli.dither.to_lowercase().as_str() {
         "floyd" | "fs" => DitherType::FloydSteinberg,
@@ -47,28 +50,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("🚀 Target FPS: {} (Delay: {}ms)", cli.fps, delay * 10);
 
-    println!("🎨 Sampling sequence for global palette...");
-    let mut sampled_pixels = Vec::new();
-    let sample_every = (cli.inputs.len() / 10).max(1);
-
-    for (i, input_path) in cli.inputs.iter().enumerate() {
-        if i % sample_every == 0 {
-            let img = image::open(input_path)?;
-            let rgb = img.to_rgb8();
-            for p in rgb.pixels().step_by(100) {
-                sampled_pixels.push(Rgb {
-                    r: p[0],
-                    g: p[1],
-                    b: p[2],
-                });
-            }
-        }
-    }
-
     let options = OptimizationOptions {
         quality: cli.quality,
         fps: cli.fps,
         dither: dither_type,
+        dither_strength: cli.dither_strength,
         lossy: cli.lossy,
         fuzz: cli.fuzz,
     };

@@ -158,7 +158,7 @@ mod tests {
             let mut palette = vec![0u8; 6]; // 2 RGB colors
             palette[0] = 255; // Red
             writer.write_global_palette(&palette).unwrap();
-            
+
             let mut encoder = LzwEncoder::new(2);
             let descriptor = ImageDescriptor {
                 x: 0,
@@ -167,7 +167,9 @@ mod tests {
                 height: 1,
                 lzw_min_code_size: 2,
             };
-            writer.write_image_data(&descriptor, &[0], &mut encoder).unwrap();
+            writer
+                .write_image_data(&descriptor, &[0], &mut encoder)
+                .unwrap();
             writer.write_trailer().unwrap();
         }
 

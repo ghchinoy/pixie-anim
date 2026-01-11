@@ -368,15 +368,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
         let report_filename = format!("tests/reports/{}_{}.md", timestamp, cli.name);
         let mut f = fs::File::create(&report_filename)?;
-        
+
         writeln!(f, "# Benchmark Report: {}", cli.name)?;
         writeln!(f, "Date: {}", chrono::Local::now())?;
         writeln!(f, "Input: {:?}", cli.input)?;
         if let Some(notes) = cli.notes {
             writeln!(f, "\n### Notes\n{}", notes)?;
         }
-        writeln!(f, "\n### Parameters\n- Quality: {}\n- Lossy: {}\n- Fuzz: {}\n- Dither: {} (Strength: {})", cli.quality, cli.lossy, cli.fuzz, cli.dither, cli.dither_strength)?;
-        
+        writeln!(
+            f,
+            "\n### Parameters\n- Quality: {}\n- Lossy: {}\n- Fuzz: {}\n- Dither: {} (Strength: {})",
+            cli.quality, cli.lossy, cli.fuzz, cli.dither, cli.dither_strength
+        )?;
+
         writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score | SSIM | PSNR |")?;
         writeln!(f, "|------|----------|-----------|-------|------|------|")?;
         for r in &results {
@@ -390,18 +394,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for r in &results {
             writeln!(f, "**{}**: {}\n", r.name, r.reasoning)?;
         }
-        
+
         // Update master log
         let master_log = "tests/benchmarks.md";
-        let mut master_file = fs::OpenOptions::new().create(true).append(true).open(master_log)?;
+        let mut master_file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(master_log)?;
         if fs::metadata(master_log)?.len() == 0 {
             writeln!(master_file, "# Pixie-Anim Master Benchmark Log\n")?;
-            writeln!(master_file, "| Date | Name | Pixie Size | Score | SSIM | Report |")?;
-            writeln!(master_file, "|------|------|------------|-------|------|--------|")?;
+            writeln!(
+                master_file,
+                "| Date | Name | Pixie Size | Score | SSIM | Report |"
+            )?;
+            writeln!(
+                master_file,
+                "|------|------|------------|-------|------|--------|"
+            )?;
         }
-        
+
         let pixie = &results[0];
-        writeln!(master_file, "| {} | {} | {:.2} KB | {:.1} | {:.3} | [Detail]({})", 
+        writeln!(
+            master_file,
+            "| {} | {} | {:.2} KB | {:.1} | {:.3} | [Detail]({})",
             chrono::Local::now().format("%Y-%m-%d"),
             cli.name,
             pixie.size_kb,
@@ -409,7 +424,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             pixie.ssim,
             report_filename
         )?;
-        
+
         println!("\n📝 Detailed report saved to: {}", report_filename);
     }
 
