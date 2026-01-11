@@ -39,6 +39,10 @@ struct Cli {
     #[arg(long, default_value = "floyd")]
     dither: String,
 
+    /// Dithering strength (0.0 to 1.0, default 0.75)
+    #[arg(long, default_value = "0.75")]
+    dither_strength: f32,
+
     /// Custom notes for this run
     #[arg(long)]
     notes: Option<String>,
@@ -176,6 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         quality: cli.quality,
         fps: 15.0,
         dither: dither_type,
+        dither_strength: cli.dither_strength,
         lossy: cli.lossy,
         fuzz: cli.fuzz,
     };
@@ -370,7 +375,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(notes) = cli.notes {
             writeln!(f, "\n### Notes\n{}", notes)?;
         }
-        writeln!(f, "\n### Parameters\n- Quality: {}\n- Lossy: {}\n- Fuzz: {}\n- Dither: {}", cli.quality, cli.lossy, cli.fuzz, cli.dither)?;
+        writeln!(f, "\n### Parameters\n- Quality: {}\n- Lossy: {}\n- Fuzz: {}\n- Dither: {} (Strength: {})", cli.quality, cli.lossy, cli.fuzz, cli.dither, cli.dither_strength)?;
         
         writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score | SSIM | PSNR |")?;
         writeln!(f, "|------|----------|-----------|-------|------|------|")?;

@@ -81,126 +81,32 @@ pub fn encode_gif(
     lossy: u8,
     fuzz: u32,
     dither: u8,
+    dither_strength: f32,
 ) -> Result<Vec<u8>, JsError> {
-    let frame_size = width as usize * height as usize * 4;
-    if data.len() != frame_size * num_frames as usize {
-        return Err(JsError::new(
-            "Data length does not match dimensions and frame count",
-        ));
-    }
-
-    let delay = (100.0 / fps).floor() as u16;
-    let transparent_idx = 255u8;
-
-    let dither_type = match dither {
-        1 => DitherType::FloydSteinberg,
-        2 => DitherType::BlueNoise,
-        3 => DitherType::Ordered,
-        _ => DitherType::None,
-    };
-
-    // 1. Sampling for global palette
-    let mut sampled_pixels = Vec::new();
-    let num_frames_to_sample = (num_frames / 10).max(1) as usize;
-    for f in 0..num_frames_to_sample {
-        let frame_idx = f * (num_frames as usize / num_frames_to_sample);
-        let start = frame_idx * frame_size;
-        for i in (0..frame_size).step_by(100) {
-            // sampled for speed
-            sampled_pixels.push(Rgb {
-                r: data[start + i],
-                g: data[start + i + 1],
-                b: data[start + i + 2],
-            });
-        }
-    }
-
-    let quantizer = KMeansQuantizer::new(quality);
-    let result = quantizer
-        .quantize(&sampled_pixels, 255)
-        .map_err(|e| JsError::new(&e.to_string()))?;
-    let global_palette = result.palette.colors;
-
-    // 2. Encoding
-    let mut buffer = Vec::new();
-    let mut writer = GifWriter::new(&mut buffer);
-    let mut prev_pixels: Option<Vec<Rgb>> = None;
-    let fuzz_sq = fuzz * fuzz;
-
-    let options = GifOptions {
-        width,
-        height,
-        has_global_palette: true,
-        palette_size: 8,
-    };
-
-    writer
-        .write_header()
-        .map_err(|e| JsError::new(&e.to_string()))?;
-    writer
-        .write_logical_screen_descriptor(&options)
-        .map_err(|e| JsError::new(&e.to_string()))?;
-
-    let mut pal_bytes = Vec::with_capacity(768);
-    for p in &global_palette {
-        pal_bytes.push(p.r);
-        pal_bytes.push(p.g);
-        pal_bytes.push(p.b);
-    }
-    while pal_bytes.len() < 768 {
-        pal_bytes.push(0);
-    }
-    writer
-        .write_global_palette(&pal_bytes)
-        .map_err(|e| JsError::new(&e.to_string()))?;
-
-    writer
-        .write_netscape_loop_block()
-        .map_err(|e| JsError::new(&e.to_string()))?;
-
-    let mut lzw_encoder = crate::lzw::LzwEncoder::new(8);
-    lzw_encoder.lossiness = lossy;
-
-    let mut prev_full_indices: Option<Vec<u8>> = None;
-
-    for f in 0..num_frames as usize {
-        let start = f * frame_size;
-        let curr_pixels: Vec<Rgb> = (0..width as usize * height as usize)
-            .map(|i| {
-                let p = start + i * 4;
-                Rgb {
-                    r: data[p],
-                    g: data[p + 1],
-                    b: data[p + 2],
-                }
-            })
-            .collect();
-
-        if f == 0 {
-            writer
-                .write_graphic_control_extension(delay, None)
-                .map_err(|e| JsError::new(&e.to_string()))?;
-
+...
             let indices = match dither_type {
                 DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(
                     width,
                     height,
                     &curr_pixels,
                     &global_palette,
+                    dither_strength,
                 ),
                 DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(
                     width,
                     height,
                     &curr_pixels,
                     &global_palette,
+                    dither_strength,
                 ),
                 DitherType::Ordered => crate::quant::dither::dither_ordered(
                     width,
                     height,
                     &curr_pixels,
                     &global_palette,
+                    dither_strength,
                 ),
-                _ => {
+...                _ => {
                     #[cfg(feature = "rayon")]
                     {
                         use rayon::prelude::*;
@@ -237,6 +143,7 @@ pub fn encode_gif(
                 transparent_idx,
                 fuzz_threshold: fuzz_sq,
                 dither: dither_type,
+                dither_strength,
             };
             if let Some(delta) = crate::delta::find_delta_fuzzy(
                 &curr_pixels, 

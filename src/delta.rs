@@ -28,18 +28,13 @@ fn rgb_dist_sq(c1: Rgb, c2: Rgb) -> u32 {
 
 /// Options for delta compression.
 pub struct DeltaOptions<'a> {
-    /// Frame width
     pub width: u16,
-    /// Frame height
     pub height: u16,
-    /// The global color palette
     pub palette: &'a [Rgb],
-    /// The index reserved for transparency
     pub transparent_idx: u8,
-    /// Squared distance threshold for "fuzzy" equality
     pub fuzz_threshold: u32,
-    /// The dithering algorithm to apply to changed pixels
     pub dither: DitherType,
+    pub dither_strength: f32,
 }
 
 /// Finds the smallest bounding box and maps pixels to transparent if they are "close enough"
@@ -141,7 +136,7 @@ pub fn find_delta_fuzzy(
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {
                                 let (ol, oa, ob) =
-                                    crate::quant::dither::get_blue_noise_offset(x, y);
+                                    crate::quant::dither::get_blue_noise_offset(x, y, options.dither_strength);
                                 let p = curr_pixels[idx];
                                 let mut lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
                                 lab.l = (lab.l + ol).clamp(0.0, 100.0);
@@ -183,7 +178,7 @@ pub fn find_delta_fuzzy(
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {
                                 let (ol, oa, ob) =
-                                    crate::quant::dither::get_blue_noise_offset(x, y);
+                                    crate::quant::dither::get_blue_noise_offset(x, y, options.dither_strength);
                                 let p = curr_pixels[idx];
                                 let mut lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
                                 lab.l = (lab.l + ol).clamp(0.0, 100.0);

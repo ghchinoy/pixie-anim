@@ -58,6 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         quality: 15,            // Higher quality sampling
         fps: 15.0,              // Must match the extraction FPS
         dither: DitherType::BlueNoise, // High-quality film grain look
+        dither_strength: 0.75,  // Balanced grain intensity
         lossy: 8,               // 8% lossiness for great compression
         fuzz: 10,               // Moderate temporal denoising
     };

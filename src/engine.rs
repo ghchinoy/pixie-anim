@@ -16,6 +16,8 @@ pub struct OptimizationOptions {
     pub fps: f32,
     /// Type of dithering to apply.
     pub dither: DitherType,
+    /// Strength of dithering (0.0 to 1.0).
+    pub dither_strength: f32,
     /// LZW lossiness level (0-20).
     pub lossy: u8,
     /// Perceptual transparency threshold.
@@ -37,8 +39,8 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
         if i % sample_every == 0 {
             let img = image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
             let rgb = img.to_rgb8();
-            // Sample every 20th pixel (5%) instead of every 100th
-            for p in rgb.pixels().step_by(20) {
+            // Sample every 5th pixel (20%) for better coverage in complex scenes
+            for p in rgb.pixels().step_by(5) {
                 sampled_pixels.push(Rgb { r: p[0], g: p[1], b: p[2] });
             }
         }
@@ -89,9 +91,9 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
             writer.write_graphic_control_extension(delay, None)?;
             
             let indices = match options.dither {
-                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette),
-                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette),
-                DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette),
+                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
+                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
+                DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette, options.dither_strength),
                 DitherType::None => {
                     #[cfg(feature = "rayon")]
                     {
@@ -125,6 +127,7 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
                 transparent_idx,
                 fuzz_threshold: fuzz_sq,
                 dither: options.dither,
+                dither_strength: options.dither_strength,
             };
             if let Some(delta) = crate::delta::find_delta_fuzzy(
                 &curr_pixels, 

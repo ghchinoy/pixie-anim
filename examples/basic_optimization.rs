@@ -22,6 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         quality: 10,
         fps: 15.0,
         dither: DitherType::Ordered,
+        dither_strength: 0.75,
         lossy: 8,
         fuzz: 10,
     };

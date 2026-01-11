@@ -62,7 +62,7 @@ const BLUE_NOISE_32: [u8; 1024] = [
 ];
 
 /// Applies perceptual Floyd-Steinberg dithering to a frame.
-pub fn dither_floyd_steinberg(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) -> Vec<u8> {
+pub fn dither_floyd_steinberg(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
@@ -73,8 +73,6 @@ pub fn dither_floyd_steinberg(width: u16, height: u16, pixels: &[Rgb], palette: 
     let mut error_buf_l = vec![0.0f32; w * h];
     let mut error_buf_a = vec![0.0f32; w * h];
     let mut error_buf_b = vec![0.0f32; w * h];
-
-    let strength = 0.75f32;
 
     for y in 0..h {
         for x in 0..w {
@@ -124,7 +122,7 @@ const BAYER_8X8: [u8; 64] = [
 ];
 
 /// Applies Ordered Dithering (Bayer 8x8) to a frame.
-pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) -> Vec<u8> {
+pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
@@ -132,14 +130,14 @@ pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) 
     let lab_palette: Vec<Lab> = palette.iter().map(|p| rgb_to_lab(p.r, p.g, p.b)).collect();
     let planar_palette = PlanarLabPalette::from_lab(&lab_palette);
 
-    // Spread strength
-    let strength = 4.0f32;
+    // Scaling factor for Ordered dither
+    let spread = 4.0f32 * strength;
 
     for y in 0..h {
         for x in 0..w {
             let idx = y * w + x;
             let bayer_val = BAYER_8X8[(y % 8) * 8 + (x % 8)] as f32 / 64.0;
-            let offset = (bayer_val - 0.5) * strength;
+            let offset = (bayer_val - 0.5) * spread;
 
             let original_lab = rgb_to_lab(pixels[idx].r, pixels[idx].g, pixels[idx].b);
             let current_lab = Lab {
@@ -156,7 +154,7 @@ pub fn dither_ordered(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) 
 }
 
 /// Applies Blue Noise dithering to a frame.
-pub fn dither_blue_noise(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb]) -> Vec<u8> {
+pub fn dither_blue_noise(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb], strength: f32) -> Vec<u8> {
     let w = width as usize;
     let h = height as usize;
     let mut indices = vec![0u8; w * h];
@@ -167,7 +165,7 @@ pub fn dither_blue_noise(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb
     for y in 0..h {
         for x in 0..w {
             let idx = y * w + x;
-            let (ol, oa, ob) = get_blue_noise_offset(x as u16, y as u16);
+            let (ol, oa, ob) = get_blue_noise_offset(x as u16, y as u16, strength);
 
             let original_lab = rgb_to_lab(pixels[idx].r, pixels[idx].g, pixels[idx].b);
             let current_lab = Lab {
@@ -185,10 +183,10 @@ pub fn dither_blue_noise(width: u16, height: u16, pixels: &[Rgb], palette: &[Rgb
 
 /// Helper to get a deterministic Lab offset for a given coordinate
 #[inline]
-pub fn get_blue_noise_offset(x: u16, y: u16) -> (f32, f32, f32) {
+pub fn get_blue_noise_offset(x: u16, y: u16, strength: f32) -> (f32, f32, f32) {
     let noise_val = BLUE_NOISE_32[((y % 32) as usize * 32) + (x % 32) as usize] as f32 / 255.0;
-    let noise_strength = 3.0f32;
-    let offset = (noise_val - 0.5) * noise_strength;
+    let noise_intensity = 3.0f32 * strength;
+    let offset = (noise_val - 0.5) * noise_intensity;
     (offset, offset * 0.5, offset * 0.5)
 }
 
