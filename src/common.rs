@@ -82,79 +82,193 @@ pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> R
     }
     writer.write_global_palette(&pal_bytes)?;
 
-    writer.write_netscape_loop_block()?;
+        writer.write_netscape_loop_block()?;
 
-    for (i, input_path) in inputs.iter().enumerate() {
-        let img =
-            image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
-        let curr_pixels: Vec<Rgb> = img
-            .to_rgb8()
-            .pixels()
-            .map(|p| Rgb {
-                r: p[0],
-                g: p[1],
-                b: p[2],
-            })
-            .collect();
+    
 
-        if i == 0 {
-            writer.write_graphic_control_extension(delay, None)?;
-            
-            let indices = match options.dither {
-                DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette),
-                DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette),
-                DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette),
-                DitherType::None => {
-                    #[cfg(feature = "rayon")]
-                    {
-                        use rayon::prelude::*;
-                        curr_pixels.par_iter()
-                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                            .collect()
+        let mut prev_full_indices: Option<Vec<u8>> = None;
+
+    
+
+        for (i, input_path) in inputs.iter().enumerate() {
+
+            let img =
+
+                image::open(input_path).map_err(|e| crate::error::Error::Internal(e.to_string()))?;
+
+            let curr_pixels: Vec<Rgb> = img
+
+                .to_rgb8()
+
+                .pixels()
+
+                .map(|p| Rgb {
+
+                    r: p[0],
+
+                    g: p[1],
+
+                    b: p[2],
+
+                })
+
+                .collect();
+
+    
+
+            if i == 0 {
+
+                writer.write_graphic_control_extension(delay, None)?;
+
+                
+
+                let indices = match options.dither {
+
+                    DitherType::FloydSteinberg => crate::quant::dither::dither_floyd_steinberg(width as u16, height as u16, &curr_pixels, &global_palette),
+
+                    DitherType::BlueNoise => crate::quant::dither::dither_blue_noise(width as u16, height as u16, &curr_pixels, &global_palette),
+
+                    DitherType::Ordered => crate::quant::dither::dither_ordered(width as u16, height as u16, &curr_pixels, &global_palette),
+
+                    DitherType::None => {
+
+                        #[cfg(feature = "rayon")]
+
+                        {
+
+                            use rayon::prelude::*;
+
+                            curr_pixels
+
+                                .par_iter()
+
+                                .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+
+                                .collect()
+
+                        }
+
+                        #[cfg(not(feature = "rayon"))]
+
+                        {
+
+                            curr_pixels
+
+                                .iter()
+
+                                .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
+
+                                .collect()
+
+                        }
+
                     }
-                    #[cfg(not(feature = "rayon"))]
-                    {
-                        curr_pixels.iter()
-                            .map(|&p| crate::simd::find_nearest_color(p, &global_palette) as u8)
-                            .collect()
-                    }
-                }
-            };
-            let descriptor = ImageDescriptor {
-                x: 0,
-                y: 0,
-                width: width as u16,
-                height: height as u16,
-                lzw_min_code_size: 8,
-            };
-            writer.write_image_data(&descriptor, &indices, &mut lzw_encoder)?;
-        } else if let Some(prev) = &prev_pixels {
-            let delta_options = DeltaOptions {
-                width: width as u16,
-                height: height as u16,
-                palette: &global_palette,
-                transparent_idx,
-                fuzz_threshold: fuzz_sq,
-                dither: options.dither,
-            };
-            if let Some(delta) = crate::delta::find_delta_fuzzy(
-                &curr_pixels, 
-                prev, 
-                &delta_options,
-            ) {
-                writer.write_graphic_control_extension(delay, Some(transparent_idx))?;
-                let descriptor = ImageDescriptor {
-                    x: delta.x,
-                    y: delta.y,
-                    width: delta.width,
-                    height: delta.height,
-                    lzw_min_code_size: 8,
+
                 };
-                writer.write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)?;
+
+                let descriptor = ImageDescriptor {
+
+                    x: 0,
+
+                    y: 0,
+
+                    width: width as u16,
+
+                    height: height as u16,
+
+                    lzw_min_code_size: 8,
+
+                };
+
+                writer.write_image_data(&descriptor, &indices, &mut lzw_encoder)?;
+
+                prev_full_indices = Some(indices);
+
+            } else if let Some(prev) = &prev_pixels {
+
+                let delta_options = DeltaOptions {
+
+                    width: width as u16,
+
+                    height: height as u16,
+
+                    palette: &global_palette,
+
+                    transparent_idx,
+
+                    fuzz_threshold: fuzz_sq,
+
+                    dither: options.dither,
+
+                };
+
+                if let Some(delta) = crate::delta::find_delta_fuzzy(
+
+                    &curr_pixels, 
+
+                    prev, 
+
+                    prev_full_indices.as_deref(),
+
+                    &delta_options,
+
+                ) {
+
+                    writer.write_graphic_control_extension(delay, Some(transparent_idx))?;
+
+                    let descriptor = ImageDescriptor {
+
+                        x: delta.x,
+
+                        y: delta.y,
+
+                        width: delta.width,
+
+                        height: delta.height,
+
+                        lzw_min_code_size: 8,
+
+                    };
+
+                    writer.write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)?;
+
+                    
+
+                    // Update full indices for the next frame
+
+                    if let Some(ref mut full_indices) = prev_full_indices {
+
+                        for y in 0..delta.height {
+
+                            for x in 0..delta.width {
+
+                                let global_x = delta.x + x;
+
+                                let global_y = delta.y + y;
+
+                                let global_idx = (global_y as usize * width as usize) + global_x as usize;
+
+                                let local_idx = (y as usize * delta.width as usize) + x as usize;
+
+                                if delta.indices[local_idx] != transparent_idx {
+
+                                    full_indices[global_idx] = delta.indices[local_idx];
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
             }
+
+            prev_pixels = Some(curr_pixels);
+
         }
-        prev_pixels = Some(curr_pixels);
-    }
 
     writer.write_trailer()?;
     Ok(buffer)

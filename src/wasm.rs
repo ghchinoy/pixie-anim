@@ -161,6 +161,8 @@ pub fn encode_gif(
     let mut lzw_encoder = crate::lzw::LzwEncoder::new(8);
     lzw_encoder.lossiness = lossy;
 
+    let mut prev_full_indices: Option<Vec<u8>> = None;
+
     for f in 0..num_frames as usize {
         let start = f * frame_size;
         let curr_pixels: Vec<Rgb> = (0..width as usize * height as usize)
@@ -226,6 +228,7 @@ pub fn encode_gif(
             writer
                 .write_image_data(&descriptor, &indices, &mut lzw_encoder)
                 .map_err(|e| JsError::new(&e.to_string()))?;
+            prev_full_indices = Some(indices);
         } else if let Some(prev) = &prev_pixels {
             let delta_options = DeltaOptions {
                 width,
@@ -235,7 +238,12 @@ pub fn encode_gif(
                 fuzz_threshold: fuzz_sq,
                 dither: dither_type,
             };
-            if let Some(delta) = crate::delta::find_delta_fuzzy(&curr_pixels, prev, &delta_options) {
+            if let Some(delta) = crate::delta::find_delta_fuzzy(
+                &curr_pixels, 
+                prev, 
+                prev_full_indices.as_deref(),
+                &delta_options,
+            ) {
                 writer
                     .write_graphic_control_extension(delay, Some(transparent_idx))
                     .map_err(|e| JsError::new(&e.to_string()))?;
@@ -249,6 +257,21 @@ pub fn encode_gif(
                 writer
                     .write_image_data(&descriptor, &delta.indices, &mut lzw_encoder)
                     .map_err(|e| JsError::new(&e.to_string()))?;
+                
+                // Update full indices for the next frame
+                if let Some(ref mut full_indices) = prev_full_indices {
+                    for dy in 0..delta.height {
+                        for dx in 0..delta.width {
+                            let global_x = delta.x + dx;
+                            let global_y = delta.y + dy;
+                            let global_idx = (global_y as usize * width as usize) + global_x as usize;
+                            let local_idx = (dy as usize * delta.width as usize) + dx as usize;
+                            if delta.indices[local_idx] != transparent_idx {
+                                full_indices[global_idx] = delta.indices[local_idx];
+                            }
+                        }
+                    }
+                }
             }
         }
         prev_pixels = Some(curr_pixels);

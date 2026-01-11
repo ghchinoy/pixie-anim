@@ -48,10 +48,12 @@ pub struct DeltaOptions<'a> {
 /// # Arguments
 /// * `curr_pixels` - Pixels of the current frame
 /// * `prev_pixels` - Pixels of the previous frame
+/// * `prev_indices` - Palette indices used in the previous frame at these coordinates
 /// * `options` - Delta compression configuration
 pub fn find_delta_fuzzy(
     curr_pixels: &[Rgb], 
     prev_pixels: &[Rgb],
+    prev_indices: Option<&[u8]>,
     options: &DeltaOptions,
 ) -> Option<FrameDelta> {
     if curr_pixels.len() != prev_pixels.len() {
@@ -121,6 +123,20 @@ pub fn find_delta_fuzzy(
                 if rgb_dist_sq(curr_pixels[idx], prev_pixels[idx]) <= options.fuzz_threshold {
                     options.transparent_idx
                 } else {
+                    // TEMPORAL DENOISING:
+                    // If we used an index in the previous frame, check if that same color 
+                    // is "close enough" to our current pixel. Reusing indices is LZW-friendly.
+                    if let Some(prev_idx_buffer) = prev_indices {
+                        let prev_idx = prev_idx_buffer[idx];
+                        if prev_idx != options.transparent_idx {
+                            let prev_color = options.palette[prev_idx as usize];
+                            // Use a tighter threshold for index-reuse than for transparency
+                            if rgb_dist_sq(curr_pixels[idx], prev_color) <= options.fuzz_threshold / 2 {
+                                return prev_idx;
+                            }
+                        }
+                    }
+
                     match options.dither {
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {
@@ -152,6 +168,17 @@ pub fn find_delta_fuzzy(
                 if rgb_dist_sq(curr_pixels[idx], prev_pixels[idx]) <= options.fuzz_threshold {
                     options.transparent_idx
                 } else {
+                    // TEMPORAL DENOISING:
+                    if let Some(prev_idx_buffer) = prev_indices {
+                        let prev_idx = prev_idx_buffer[idx];
+                        if prev_idx != options.transparent_idx {
+                            let prev_color = options.palette[prev_idx as usize];
+                            if rgb_dist_sq(curr_pixels[idx], prev_color) <= options.fuzz_threshold / 2 {
+                                return prev_idx;
+                            }
+                        }
+                    }
+
                     match options.dither {
                         DitherType::BlueNoise => {
                             if let Some((_, pp)) = lab_palette_ref {

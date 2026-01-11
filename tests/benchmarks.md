@@ -342,3 +342,25 @@ Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.
 
 ---
 
+## Benchmark: space_waves_denoised (2026-01-10 17:00:57.474596 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score |
+|------|----------|-----------|-------|
+| Pixie-Anim | 2.000 | 9822.81 | 7.0 |
+| Gifsicle | 2.205 | 19034.63 | 7.0 |
+| FFmpeg | 2.860 | 19290.80 | 6.0 |
+| gifski | 1.629 | 13589.32 | 4.0 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimized GIF manages to maintain the vibrant color palette and general composition of the complex nebula and waves. However, to handle the wide color range within the GIF's 256-color limit, aggressive dithering has been applied. This results in significant graininess across all gradients, particularly visible in the smooth areas of the cosmic waves and the dark sky. Fine details, such as the smallest stars, are partially obscured by this noise.
+
+**Gifsicle**: The optimized GIF handles a complex, color-rich scene with high-frequency detail reasonably well. Heavy dithering is used to compensate for the limited GIF palette, which successfully prevents severe color banding in the nebulae but introduces a constant layer of noise/grain across the image. Fine details in the wave peaks are maintained, though some of the original's depth is lost due to color quantization.
+
+**FFmpeg**: The optimized frames suffer from heavy dithering throughout the image, which is particularly noticeable in the dark regions of the sky and the smooth gradients of the cosmic waves. This creates a grainy, 'sandy' texture that replaces the smooth, high-fidelity appearance of the original. Fine details, such as smaller stars and the subtle wisps of the nebulae, are muddied by the palette limitations of the GIF format.
+
+**gifski**: The optimized GIF suffers from significant aesthetic degradation due to the technical limitations of the format. The complex gradients and vast color palette of the original cosmic ocean scene are forced into heavy dithering patterns to approximate the colors. This transforms smooth, ethereal textures into a coarse, grainy mess. The fine star details in the background are mostly lost or blended into the dithered noise.
+
+
+---
+
