@@ -53,6 +53,8 @@ struct ToolResult {
     time_secs: f64,
     size_kb: f64,
     score: f64,
+    ssim: f64,
+    psnr: f64,
     reasoning: String,
 }
 
@@ -77,7 +79,7 @@ fn extract_frames(input: &Path, test_name: &str) -> PathBuf {
     if !frame_dir.exists() {
         println!("🎞️  Extracting frames to {:?}...", frame_dir);
         fs::create_dir_all(&frame_dir).expect("Failed to create frame directory");
-        Command::new("ffmpeg")
+        let output = Command::new("ffmpeg")
             .args([
                 "-y",
                 "-i",
@@ -88,6 +90,12 @@ fn extract_frames(input: &Path, test_name: &str) -> PathBuf {
             ])
             .output()
             .expect("Failed to execute ffmpeg");
+        
+        if !output.status.success() {
+            eprintln!("❌ ffmpeg extraction failed:");
+            eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+            std::process::exit(1);
+        }
     } else {
         println!("💾 Using existing frames in {:?}", frame_dir);
     }
@@ -130,12 +138,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("⚠️  Warning: Judging requires an original video file. Skipping evaluation.");
     }
 
+    println!("🔍 Searching for frames in {:?}...", frame_dir);
     let mut frame_paths: Vec<PathBuf> = fs::read_dir(&frame_dir)?
         .filter_map(|res| res.ok())
         .map(|res| res.path())
         .filter(|path| path.extension().and_then(|s| s.to_str()) == Some("png"))
         .collect();
     frame_paths.sort();
+    println!("📸 Found {} frames", frame_paths.len());
+
+    if frame_paths.is_empty() {
+        eprintln!("❌ Error: No PNG frames found in {:?}. Ensure extraction succeeded.", frame_dir);
+        std::process::exit(1);
+    }
 
     println!("🚀 Starting Benchmark: {}", cli.name);
     let judge = Judge::new(api_key, "gemini-3-flash-preview");
@@ -168,11 +183,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         time_secs: time,
         size_kb: buffer.len() as f64 / 1024.0,
         score: 0.0,
+        ssim: 0.0,
+        psnr: 0.0,
         reasoning: String::new(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &output_path).await?;
         pixie_res.score = eval["score"].as_f64().unwrap_or(0.0);
+        pixie_res.ssim = eval["ssim"].as_f64().unwrap_or(0.0);
+        pixie_res.psnr = eval["psnr"].as_f64().unwrap_or(0.0);
         pixie_res.reasoning = eval["reasoning"].as_str().unwrap_or("").to_string();
     }
     results.push(pixie_res);
@@ -229,11 +248,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         time_secs: time,
         size_kb: fs::metadata(&gifsicle_path)?.len() as f64 / 1024.0,
         score: 0.0,
+        ssim: 0.0,
+        psnr: 0.0,
         reasoning: String::new(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &gifsicle_path).await?;
         gs_res.score = eval["score"].as_f64().unwrap_or(0.0);
+        gs_res.ssim = eval["ssim"].as_f64().unwrap_or(0.0);
+        gs_res.psnr = eval["psnr"].as_f64().unwrap_or(0.0);
         gs_res.reasoning = eval["reasoning"].as_str().unwrap_or("").to_string();
     }
     results.push(gs_res);
@@ -271,11 +294,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         time_secs: time,
         size_kb: fs::metadata(&ffmpeg_path)?.len() as f64 / 1024.0,
         score: 0.0,
+        ssim: 0.0,
+        psnr: 0.0,
         reasoning: String::new(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &ffmpeg_path).await?;
         ff_res.score = eval["score"].as_f64().unwrap_or(0.0);
+        ff_res.ssim = eval["ssim"].as_f64().unwrap_or(0.0);
+        ff_res.psnr = eval["psnr"].as_f64().unwrap_or(0.0);
         ff_res.reasoning = eval["reasoning"].as_str().unwrap_or("").to_string();
     }
     results.push(ff_res);
@@ -298,11 +325,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         time_secs: time,
         size_kb: fs::metadata(&gifski_path)?.len() as f64 / 1024.0,
         score: 0.0,
+        ssim: 0.0,
+        psnr: 0.0,
         reasoning: String::new(),
     };
     if !original_video.as_os_str().is_empty() {
         let eval = judge.evaluate(&original_video, &gifski_path).await?;
         gk_res.score = eval["score"].as_f64().unwrap_or(0.0);
+        gk_res.ssim = eval["ssim"].as_f64().unwrap_or(0.0);
+        gk_res.psnr = eval["psnr"].as_f64().unwrap_or(0.0);
         gk_res.reasoning = eval["reasoning"].as_str().unwrap_or("").to_string();
     }
     results.push(gk_res);
@@ -310,14 +341,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // REPORTING
     println!("\n--- 📊 Benchmark Results: {} ---", cli.name);
     println!(
-        "{:<12} | {:<10} | {:<10} | {:<10}",
-        "Tool", "Time (s)", "Size (KB)", "Score"
+        "{:<12} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10}",
+        "Tool", "Time (s)", "Size (KB)", "Score", "SSIM", "PSNR"
     );
-    println!("{}", "-".repeat(50));
+    println!("{}", "-".repeat(70));
     for r in &results {
         println!(
-            "{:<12} | {:<10.3} | {:<10.2} | {:<10.1}",
-            r.name, r.time_secs, r.size_kb, r.score
+            "{:<12} | {:<10.3} | {:<10.2} | {:<10.1} | {:<10.3} | {:<10.1}",
+            r.name, r.time_secs, r.size_kb, r.score, r.ssim, r.psnr
         );
     }
 
@@ -328,13 +359,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .open(report_path)?;
         writeln!(f, "## Benchmark: {} ({})", cli.name, chrono::Local::now())?;
         writeln!(f, "Input: {:?}", cli.input)?;
-        writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score |")?;
-        writeln!(f, "|------|----------|-----------|-------|")?;
+        writeln!(f, "\n| Tool | Time (s) | Size (KB) | Score | SSIM | PSNR |")?;
+        writeln!(f, "|------|----------|-----------|-------|------|------|")?;
         for r in &results {
             writeln!(
                 f,
-                "| {} | {:.3} | {:.2} | {:.1} |",
-                r.name, r.time_secs, r.size_kb, r.score
+                "| {} | {:.3} | {:.2} | {:.1} | {:.3} | {:.1} |",
+                r.name, r.time_secs, r.size_kb, r.score, r.ssim, r.psnr
             )?;
         }
         writeln!(f, "\n### Subjective Reasoning")?;

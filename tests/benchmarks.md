@@ -364,3 +364,25 @@ Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.
 
 ---
 
+## Benchmark: space_waves_metrics (2026-01-10 17:45:45.627532 -07:00)
+Input: "tests/fixtures/synthetic/veo-veo-3.1-generate-preview-20260110-161917-0.mp4"
+
+| Tool | Time (s) | Size (KB) | Score | SSIM | PSNR |
+|------|----------|-----------|-------|------|------|
+| Pixie-Anim | 1.878 | 9480.04 | 6.0 | 0.610 | 26.7 |
+| Gifsicle | 2.497 | 19034.63 | 6.0 | 0.745 | 28.7 |
+| FFmpeg | 4.432 | 19290.80 | 7.0 | 0.745 | 28.7 |
+| gifski | 1.690 | 13589.32 | 7.0 | 0.737 | 28.8 |
+
+### Subjective Reasoning
+**Pixie-Anim**: The optimization process significantly impacts the visual quality due to the complex color palette of the source. The limited 256-color GIF space results in heavy error-diffusion dithering across the entire image to represent the gradients, which replaces the smooth nebula textures with a gritty, pixelated noise. Color banding is particularly noticeable in the darker space regions and the transitions within the nebula clouds.
+
+**Gifsicle**: The optimized GIF suffers from the inherent 8-bit color limitations of the format. While the overall structure of the frame is preserved, the complex cosmic gradients and vibrant highlights in the 'waves' are heavily dithered to compensate for the limited palette. This transforms the smooth, ethereal textures of the original nebulae into a grainy, noisy pattern. Temporal consistency between the provided frames is stable, but the loss of color depth and fine star clarity is significant.
+
+**FFmpeg**: The optimized GIF handles an exceptionally difficult scene (complex gradients and high-frequency star details) with moderate success. The primary compromise is the introduction of heavy dithering to simulate the color depth of the original nebula and waves. This results in a pervasive grainy texture that masks the fine 'star dust' details present in the original video. Color fidelity remains relatively high, though the deep blacks and vibrant highlights suffer from quantization.
+
+**gifski**: The optimization maintains the overall composition and vibrant color palette reasonably well, but the heavy use of dithering to compensate for the GIF's 256-color limit is very apparent. This creates a pervasive graininess across the sky and water surfaces, particularly in the deep blue and purple gradients. Fine details, such as the smallest background stars and the sharpest peaks of the waves, are slightly softened due to this dithering pattern.
+
+
+---
+

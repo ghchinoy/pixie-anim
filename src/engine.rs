@@ -24,6 +24,9 @@ pub struct OptimizationOptions {
 
 /// Optimizes a sequence of images into a single GIF buffer.
 pub fn optimize_sequence(inputs: &[PathBuf], options: &OptimizationOptions) -> Result<Vec<u8>> {
+    if inputs.is_empty() {
+        return Err(crate::error::Error::Internal("No input images provided for optimization".to_string()));
+    }
     let delay = (100.0 / options.fps).floor() as u16;
     
     // 1. Sampling for palette
