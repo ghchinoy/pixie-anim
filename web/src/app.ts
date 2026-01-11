@@ -8,6 +8,12 @@ export class PixieApp extends LitElement {
   static styles = css`
     :host { display: block; --surface: #111; --border: #2a2a2a; --accent: #3b82f6; }
     * { font-family: system-ui, -apple-system, sans-serif; }
+    .header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 2rem; }
+    .brand { font-size: 1.2rem; font-weight: bold; letter-spacing: -0.02rem; }
+    .tagline { font-size: 0.8rem; color: #666; display: flex; align-items: center; gap: 0.5rem; }
+    .header-links { display: flex; align-items: baseline; gap: 1.25rem; }
+    .header-link { font-size: 0.75rem; color: var(--accent); text-decoration: none; text-transform: uppercase; letter-spacing: 0.05rem; }
+    .header-link:hover { text-decoration: underline; }
     .main-grid { display: flex; flex-direction: column; gap: 1.5rem; }
     .settings-bar { 
       background: var(--surface); 
@@ -149,6 +155,23 @@ export class PixieApp extends LitElement {
 
   render() {
     return html`
+      <div class="header">
+        <div class="brand">PIXIE-ANIM</div>
+        <div style="flex-grow: 1"></div>
+        <div class="header-links">
+          <div class="tagline">
+            ZERO-DEPENDENCY RUST GIF OPTIMIZER
+            <a href="https://github.com/ghchinoy/pixie-anim" target="_blank">
+              <img src="https://img.shields.io/github/stars/ghchinoy/pixie-anim?style=social" alt="GitHub stars">
+            </a>
+            <button class="help-btn" @click=${() => this.showHelp = true}>?</button>
+          </div>
+          <a class="header-link" href="https://crates.io/crates/pixie-anim" target="_blank">Crates.io</a>
+          <a class="header-link" href="https://docs.rs/pixie-anim" target="_blank">Docs.rs</a>
+          <a class="header-link" href="https://ghc.wtf/writing/optimizing-gifs-with-pixo-extending-lessons-learned/" target="_blank">About</a>
+        </div>
+      </div>
+
       <div class="main-grid">
         <div class="settings-bar">
           <div class="control-group">
@@ -179,7 +202,6 @@ export class PixieApp extends LitElement {
               <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
             </select>
           </div>
-          <button class="help-btn" @click=${() => this.showHelp = true}>?</button>
           ${this.sourceBuffer ? html`
             <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
               RE-OPTIMIZE
