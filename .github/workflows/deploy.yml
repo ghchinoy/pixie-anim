@@ -26,16 +26,24 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Get wasm-bindgen version
+        id: wasm-bindgen-version
+        run: |
+          VERSION=$(grep -A 1 "name = \"wasm-bindgen\"" Cargo.lock | grep "version =" | head -n 1 | cut -d '"' -f 2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected wasm-bindgen version: $VERSION"
+
       - name: Cache wasm-bindgen
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/wasm-bindgen
-          key: ${{ runner.os }}-wasm-bindgen-0.2.108
+          key: ${{ runner.os }}-wasm-bindgen-${{ steps.wasm-bindgen-version.outputs.version }}
 
       - name: Install wasm-bindgen-cli
         run: |
-          if ! command -v wasm-bindgen &> /dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen 0.2.108" ]]; then
-            cargo install wasm-bindgen-cli --version 0.2.108
+          VERSION=${{ steps.wasm-bindgen-version.outputs.version }}
+          if ! command -v wasm-bindgen &> /dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen $VERSION" ]]; then
+            cargo install wasm-bindgen-cli --version $VERSION
           fi
 
       - name: Build WASM
