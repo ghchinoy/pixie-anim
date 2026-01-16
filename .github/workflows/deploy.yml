@@ -26,8 +26,17 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Cache wasm-bindgen
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: ${{ runner.os }}-wasm-bindgen-0.2.108
+
       - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --version 0.2.106
+        run: |
+          if ! command -v wasm-bindgen &> /dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen 0.2.108" ]]; then
+            cargo install wasm-bindgen-cli --version 0.2.108
+          fi
 
       - name: Build WASM
         run: |
