@@ -27,63 +27,84 @@ graph TD
 
 ### Phase 1: Foundation & Benchmarking
 - [x] Initialize Rust project structure (lib + modules).
-- [x] Define Synthetic Asset Generation Workflow (Veo + FFmpeg) (`pixie-gif-3q7`).
-- [x] Establish Temporary File & Test Fixture Management Policy (`pixie-gif-72z`).
-- [x] Implement GIF benchmarking suite (Gifsicle vs FFmpeg vs gifski) (`pixie-gif-sn4`).
+- [x] Define Synthetic Asset Generation Workflow (Veo + FFmpeg).
+- [x] Establish Temporary File & Test Fixture Management Policy.
+- [x] Implement GIF benchmarking suite (Gifsicle vs FFmpeg vs gifski).
 - [x] Implement foundational image utilities (Rgb, Lab, Planar buffers).
 
 ### Phase 2: Core GIF Engine
-- [x] Implement **GIF89a** structure (Header, descriptors, looping blocks) (`pixie-gif-owd`).
-- [x] Implement **LZW Encoder** from scratch (variable-length codes) (`pixie-gif-owd`).
-- [x] Integrate Pixie-Anim Core into benchmarking suite (`pixie-gif-4hh`).
+- [x] Implement **GIF89a** structure (Header, descriptors, looping blocks).
+- [x] Implement **LZW Encoder** from scratch (variable-length codes).
+- [x] Integrate Pixie-Anim Core into benchmarking suite.
 - [x] Basic static and animated GIF encoding.
 
 ### Phase 3: Advanced Optimization (The "Pixie Sauce")
-- [x] **Lossy Quantization**: K-Means++ and Perceptual CIELAB weighting (`pixie-gif-scu`, `pixie-gif-ypr`).
-- [x] **Zeng Palette Reordering**: Optimized palette indices for maximum LZW compressibility (`pixie-gif-tdv`).
-- [x] **Inter-frame Delta Compression**: Bounding-box and Fuzzy Perceptual transparency (`pixie-gif-n4q`).
-- [x] **SIMD Acceleration**: Implement **Planar** kernels for nearest-color search (`pixie-gif-fps`).
-- [x] **Error Diffusion Dithering**: Floyd-Steinberg for high visual fidelity (`pixie-gif-btb`).
+- [x] **Lossy Quantization**: K-Means++ and Perceptual CIELAB weighting.
+- [x] **Zeng Palette Reordering**: Optimized palette indices for maximum LZW compressibility.
+- [x] **Inter-frame Delta Compression**: Bounding-box and Fuzzy Perceptual transparency.
+- [x] **SIMD Acceleration**: Implement **Planar** kernels for nearest-color search.
+- [x] **Error Diffusion Dithering**: Floyd-Steinberg for high visual fidelity.
 - [x] **Lossy LZW**: Fuzzy Neighbor Matching for extreme compression.
+- [x] **Temporally Stable Dithering**: Blue Noise / Ordered Dithering (`pixie-anim-2i3`).
+- [x] **Temporal Denoising**: Cross-frame palette re-indexing logic (`pixie-anim-8wn`).
+- [x] **Variable Dither Strength**: Control grain vs banding (`pixie-anim-xgr`).
+- [ ] **Weighted CIELAB Palette Sampling**: Improve color accuracy (`pixie-anim-eib`) [P2].
+- [ ] **3D Spatio-Temporal Dither Kernel**: Research & Prototype (`pixie-anim-h8q`) [P2].
 
 ### Phase 4: Lit WebComponents UI
-- [x] Scaffold Lit project with Vite and TypeScript (`pixie-gif-ehz`).
+- [x] Scaffold Lit project with Vite and TypeScript.
 - [x] Build core components (dropzone, comparison, stats).
 - [x] Support direct MP4 frame extraction in the browser.
-- [x] Support direct WebM frame extraction in the browser (`pixie-anim-83x`).
+- [x] Support direct WebM frame extraction in the browser.
 - [x] Connect Lit UI to WASM core.
+- [x] Update Web UI with dither selection (`pixie-anim-2xy`).
+- [x] Implement Help/Explainer Dialog (`pixie-anim-8vp`).
 
-### Phase 5: WASM & Integration
-- [x] Create `wasm-bindgen` wrappers for the animation core (`pixie-gif-0nf`).
-- [x] Optimize WASM binary size via `talc` allocator (`pixie-gif-47s`).
-- [ ] Implement chunked frame encoding to reduce memory pressure (`pixie-anim-uwf`) [P1].
-- [ ] Implement frame-by-frame extraction and processing in UI (`pixie-anim-j6l`) [P1].
-- [ ] Implement WASM-to-Native Parity Tests (`pixie-anim-d0s`).
-- [ ] Add 'Black Area' histogram regression test (`pixie-anim-h1z`).
-- [ ] Implement Vitest suite for video-engine logic (`pixie-anim-xbk`).
-- [ ] Document CDP 'Sidecar' Testing Protocol for `website-assistant` (`pixie-anim-07n`).
-- [ ] Add end-to-end integration test for WebM to GIF (`pixie-anim-68r`) [P2].
+### Phase 5: WASM, Integration & Quality Gates
+- [x] Create `wasm-bindgen` wrappers for the animation core.
+- [x] Optimize WASM binary size via `talc` allocator.
+- [x] Fix WASM build features and stability (`pixie-anim-lsv`, `pixie-anim-3uz`).
+- [x] Implement GitHub Actions for WASM build and deployment (`pixie-anim-gmu`).
+- [x] Update AGENTS.md with Pre-publishing Checklist (`pixie-anim-9qh`).
+- [x] Run Cargo Quality Gates (`pixie-anim-gc0`).
+- [x] Verify all examples (`pixie-anim-lwc`).
+- [ ] Implement chunked frame encoding to reduce memory pressure (`pixie-anim-zyw`) [P1].
+- [ ] Implement frame-by-frame extraction and processing in UI (`pixie-anim-yw0`) [P1].
+- [ ] Implement WASM-to-Native Parity Tests (`pixie-anim-337`).
+- [ ] Add 'Black Area' histogram regression test.
+- [ ] Implement Vitest suite for video-engine logic (`pixie-anim-1kb`).
+- [ ] Add end-to-end integration test for WebM to GIF (`pixie-anim-9pj`).
 
-### Phase 6: Automated Subjective Evaluation
-- [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite (`pixie-gif-plv`).
+### Phase 6: Automated Subjective Evaluation & Benchmarking
+- [x] Integrate `gemini-client-api` (Gemini 3 Flash) into benchmarking suite.
 - [x] Implement "Synthetic MOS" scoring for visual quality and artifacts.
-- [ ] Implement A/B Comparative Jury in `judge.rs` (`pixie-anim-9f5`).
-- [ ] Create 'Gradient Stress' synthetic fixture (`pixie-anim-d35`).
-- [ ] Implement confidence protocol (`pixie-anim-end`) [P1].
-- [ ] Implement GIF Metadata Fingerprinting (`pixie-anim-7vw`).
+- [x] Support Markdown reports in E2E suite (`pixie-anim-3vp`).
+- [x] Implement Structured Reporting in `pixie-bench` (`pixie-anim-xt7`).
+- [x] Integrate SSIM/PSNR objective metrics (`pixie-anim-r2y`).
+- [x] Consolidate benchmarking scripts into unified CLI tool (`pixie-anim-p74`).
+- [x] Implement fixture cleanup script (`pixie-anim-uwo`).
+- [ ] **New Evaluation Suite**: High, med, low quality presets (`pixie-anim-no4`) [P2].
+- [ ] **Analyze Gemini Judge Paradox**: AI evaluation consistency (`pixie-anim-750`) [P3].
+- [ ] Implement A/B Comparative Jury in `judge.rs`.
+- [ ] Create 'Gradient Stress' synthetic fixture.
 
-### Phase 7: Rust Ecosystem & Crate Publication (Epic: `pixie-anim-2vc`)
-- [ ] Refine Public API surface for library usage (`pixie-anim-ae9`).
-- [ ] Comprehensive Crate Documentation (`pixie-anim-569`).
-- [ ] Add usage examples in `/examples` directory (`pixie-anim-dqw`).
-- [ ] Automated CI/CD for Crate Quality (`pixie-anim-c9h`).
-- [ ] Initial Publication to `crates.io` (`pixie-anim-4vs`).
+### Phase 7: Rust Ecosystem & Crate Publication (Epic: `pixie-anim-xu0`)
+- [x] Rename Pixo-GIF to Pixie-Anim across codebase (`pixie-anim-5b5`).
+- [x] Add physical MIT LICENSE file (`pixie-anim-yng`).
+- [x] Document examples in `examples/README.md` (`pixie-anim-59u`).
+- [x] Implement `video_to_gif` example (`pixie-anim-0xr`).
+- [x] Verify and fix `basic_optimization.rs` (`pixie-anim-j18`).
+- [x] Refine Public API for crates.io (`pixie-anim-hjv`).
+- [x] Implement Comprehensive Crate Documentation (`pixie-anim-5c8`).
+- [x] Optimize Feature Gating for Zero-Dep Core (`pixie-anim-axj`).
+- [x] Finalize Crate Metadata and Publish (`pixie-anim-bw2`).
+- [x] Initial Publication to `crates.io` (`pixie-anim-1xy`).
+- [ ] Automated CI/CD for Crate Quality.
 
 ### Future Exploration
-- [ ] **Advanced Fuzzy Delta**: Cross-frame palette re-indexing (`pixie-anim-c70`).
 - [ ] **Optimal LZW**: Look-ahead string matching logic.
-- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder (`pixie-anim-iaj`).
-- [ ] **MP4/WebM Benchmark Integration**: Native decoding in the CLI suite (`pixie-anim-o0g`).
+- [ ] **WebP Support**: Prototype a zero-dependency WebP Lossless (VP8L) encoder.
+- [ ] **MP4/WebM Benchmark Integration**: Native decoding in the CLI suite.
 
 ## 4. Key Implementation Notes
 - **Memory**: Use dictionary reuse and Object URL revocation to avoid browser hangs on large animations.

@@ -18,15 +18,29 @@ export class PixieApp extends LitElement {
     .settings-bar { 
       background: var(--surface); 
       border: 1px solid var(--border);
-      padding: 0.75rem 1rem;
+      padding: 1rem;
       border-radius: 4px;
       display: flex;
-      gap: 1.25rem;
-      align-items: center;
+      flex-direction: column;
+      gap: 1rem;
       font-size: 0.75rem;
     }
-    .control-group { display: flex; align-items: center; gap: 0.5rem; }
-    input[type='range'] { accent-color: var(--accent); width: 80px; }
+    .settings-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    .control-group { 
+      display: flex; 
+      align-items: center; 
+      gap: 0.4rem; 
+      white-space: nowrap;
+    }
+    .control-group.disabled { opacity: 0.3; pointer-events: none; }
+    input[type='range'] { accent-color: var(--accent); width: 70px; }
+    input[type='range']:disabled { cursor: not-allowed; }
     input[type='number'] { 
       background: #000; border: 1px solid var(--border); color: #fff; 
       padding: 2px 4px; font-family: inherit; width: 35px; 
@@ -134,12 +148,13 @@ export class PixieApp extends LitElement {
   private sourceHeight = 0;
   private sourceFrames = 0;
 
+  @state() private preset: 'low' | 'medium' | 'high' | 'custom' = 'medium';
   @state() private quality = 10;
   @state() private fps = 12;
   @state() private lossy = 8;
-  @state() private fuzz = 10;
-  @state() private dither = 3; // Default to Ordered (Bayer)
-  @state() private ditherStrength = 0.75;
+  @state() private fuzz = 4;
+  @state() private dither = 1; // Default to Floyd
+  @state() private ditherStrength = 0.70;
 
   async firstUpdated() {
     await init();
@@ -175,44 +190,59 @@ export class PixieApp extends LitElement {
 
       <div class="main-grid">
         <div class="settings-bar">
-          <div class="control-group">
-            <label>QUALITY</label>
-            <input type="range" min="1" max="20" .value=${this.quality} @input=${(e: any) => this.quality = parseInt(e.target.value)}>
-            <span style="min-width: 20px">${this.quality}</span>
+          <div class="settings-row">
+            <div class="control-group">
+              <label style="color: var(--accent); font-weight: bold;">PRESET</label>
+              <select @change=${this._handlePresetChange} style="background: var(--accent); color: #000; border: none; font-size: 0.75rem; padding: 4px 8px; font-weight: bold; border-radius: 2px; cursor: pointer;">
+                <option value="low" ?selected=${this.preset === 'low'}>LOW (FAST / MAX COMPRESSION)</option>
+                <option value="medium" ?selected=${this.preset === 'medium'}>MEDIUM (BALANCED)</option>
+                <option value="high" ?selected=${this.preset === 'high'}>HIGH (MAX FIDELITY)</option>
+                <option value="custom" ?selected=${this.preset === 'custom'}>CUSTOM</option>
+              </select>
+            </div>
+            <div style="flex-grow: 1"></div>
+            ${this.sourceBuffer ? html`
+              <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
+                RE-OPTIMIZE
+              </button>
+            ` : ''}
           </div>
-          <div class="control-group">
-            <label>LOSSY</label>
-            <input type="range" min="0" max="20" .value=${this.lossy} @input=${(e: any) => this.lossy = parseInt(e.target.value)}>
-            <span style="min-width: 20px">${this.lossy}</span>
+
+          <div class="settings-row">
+            <div class="control-group">
+              <label>QUALITY</label>
+              <input type="range" min="1" max="50" .value=${this.quality} @input=${(e: any) => { this.quality = parseInt(e.target.value); this.preset = 'custom'; }}>
+              <span style="min-width: 20px">${this.quality}</span>
+            </div>
+            <div class="control-group">
+              <label>LOSSY</label>
+              <input type="range" min="0" max="40" .value=${this.lossy} @input=${(e: any) => { this.lossy = parseInt(e.target.value); this.preset = 'custom'; }}>
+              <span style="min-width: 20px">${this.lossy}</span>
+            </div>
+            <div class="control-group">
+              <label>FUZZY</label>
+              <input type="range" min="0" max="50" .value=${this.fuzz} @input=${(e: any) => { this.fuzz = parseInt(e.target.value); this.preset = 'custom'; }}>
+              <span style="min-width: 20px">${this.fuzz}</span>
+            </div>
+            <div class="control-group">
+              <label>FPS</label>
+              <input type="number" .value=${this.fps} @input=${(e: any) => { this.fps = parseInt(e.target.value); this.preset = 'custom'; }}>
+            </div>
+            <div class="control-group">
+              <label>DITHER</label>
+              <select @change=${(e: any) => { this.dither = parseInt(e.target.value); this.preset = 'custom'; }} style="background: #000; color: #fff; border: 1px solid var(--border); font-size: 0.7rem; padding: 2px;">
+                <option value="0" ?selected=${this.dither === 0}>NONE</option>
+                <option value="1" ?selected=${this.dither === 1}>FLOYD</option>
+                <option value="2" ?selected=${this.dither === 2}>BLUE</option>
+                <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
+              </select>
+            </div>
+            <div class="control-group ${this.dither === 0 ? 'disabled' : ''}">
+              <label>STRENGTH</label>
+              <input type="range" min="0" max="100" .value=${this.ditherStrength * 100} ?disabled=${this.dither === 0} @input=${(e: any) => { this.ditherStrength = parseInt(e.target.value) / 100; this.preset = 'custom'; }}>
+              <span style="min-width: 25px">${Math.round(this.ditherStrength * 100)}%</span>
+            </div>
           </div>
-          <div class="control-group">
-            <label>FUZZY</label>
-            <input type="range" min="0" max="50" .value=${this.fuzz} @input=${(e: any) => this.fuzz = parseInt(e.target.value)}>
-            <span style="min-width: 20px">${this.fuzz}</span>
-          </div>
-          <div class="control-group">
-            <label>FPS</label>
-            <input type="number" .value=${this.fps} @input=${(e: any) => this.fps = parseInt(e.target.value)}>
-          </div>
-          <div class="control-group">
-            <label>DITHER</label>
-            <select @change=${(e: any) => this.dither = parseInt(e.target.value)} style="background: #000; color: #fff; border: 1px solid var(--border); font-size: 0.7rem; padding: 2px;">
-              <option value="0" ?selected=${this.dither === 0}>NONE</option>
-              <option value="1" ?selected=${this.dither === 1}>FLOYD</option>
-              <option value="2" ?selected=${this.dither === 2}>BLUE</option>
-              <option value="3" ?selected=${this.dither === 3}>ORDERED</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>STRENGTH</label>
-            <input type="range" min="0" max="100" .value=${this.ditherStrength * 100} @input=${(e: any) => this.ditherStrength = parseInt(e.target.value) / 100}>
-            <span style="min-width: 25px">${Math.round(this.ditherStrength * 100)}%</span>
-          </div>
-          ${this.sourceBuffer ? html`
-            <button class="btn btn-reprocess" ?disabled=${this.processing} @click=${this._reprocess}>
-              RE-OPTIMIZE
-            </button>
-          ` : ''}
         </div>
 
         ${!this.resultUrl && !this.processing ? html`
@@ -520,6 +550,30 @@ export class PixieApp extends LitElement {
       this.resultUrl = URL.createObjectURL(blob);
     } finally {
       this.processing = false;
+    }
+  }
+
+  private _handlePresetChange(e: any) {
+    const p = e.target.value;
+    this.preset = p;
+    
+    if (p === 'low') {
+      this.quality = 4;
+      this.lossy = 20;
+      this.fuzz = 10;
+      this.dither = 0; // None
+    } else if (p === 'medium') {
+      this.quality = 10;
+      this.lossy = 8;
+      this.fuzz = 4;
+      this.dither = 1; // Floyd
+      this.ditherStrength = 0.70;
+    } else if (p === 'high') {
+      this.quality = 30;
+      this.lossy = 0;
+      this.fuzz = 1;
+      this.dither = 1; // Floyd
+      this.ditherStrength = 0.75;
     }
   }
 }
