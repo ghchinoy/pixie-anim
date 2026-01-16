@@ -48,6 +48,7 @@ For full workflow details: `bd prime`
 - **Temporal Stability**: Spatial error diffusion (Floyd-Steinberg) causes "shimmering" in video. For animations, prefer deterministic mask-based dithering (like Blue Noise or Ordered) to ensure static areas remain consistent across frames.
 - **Crate Publication**: To verify a "Zero-Dependency" mandate, always test with `cargo build --no-default-features`. Ensure all public APIs use Struct-based parameter passing to avoid `too_many_arguments` lints and improve ergonomics.
 - **Reference Code**: Always consult `~/dev/github/pixo` for SIMD patterns, WASM bindings, and "Pixo" stylistic conventions before implementing core modules.
+- **WASM Versioning**: `wasm-bindgen-cli` MUST match the version in `Cargo.lock` exactly. The CI/CD pipeline in `.github/workflows/deploy.yml` handles this automatically by extracting the version at runtime. Always use `actions/cache` for the `wasm-bindgen` binary to avoid 4-minute re-compilations.
 
 ## Code Standards for Codecs
 
@@ -87,7 +88,8 @@ To improve Pixie-Anim's visual quality score, follow this iterative protocol:
    ```bash
    ./target/release/pixie-bench --input tests/fixtures/synthetic/base_test_frames/ --original tests/fixtures/synthetic/video.mp4 --name iter_1 --quality 20 --lossy 5
    ```
-4. **Target Score**: Goal is a Subjective Score >= 7.0 while maintaining a size advantage of >30% over Gifsicle.
+4. **Preset Validation**: Use `scripts/preset_sweep_v2.sh` to ensure that any changes to the core engine still maintain the perceptual quality bars for the "High/Medium/Low" presets.
+5. **Target Score**: Goal is a Subjective Score >= 7.0 while maintaining a size advantage of >30% over Gifsicle.
 
 ## Pre-Publishing Quality Gate (Checklist)
 
@@ -105,6 +107,7 @@ Before any `cargo publish`, the following sequence MUST be executed and verified
 
 - **Temporal Denoising**: We use "Cross-Frame Palette Re-indexing" (The Lazy Rule). If a pixel's color is within `fuzz / 2` of the previous frame's color at that coordinate, we reuse the previous palette index. This dramatically improves LZW compression and eliminates "shimmering" artifacts.
 - **Perceptual Dithering**: Always perform dithering in CIELAB space. We cap error diffusion at 75% strength to prevent excessive grain.
+- **Evaluation-Driven Presets**: High/Medium/Low presets are not arbitrary; they are grounded in **Synthetic MOS** scores from Gemini. We target specific size/quality ratios (e.g., High = Score 7.0+, Size -30% vs Gifsicle) and enforce these through the `preset_sweep` regression tool.
 
 ## Landing the Plane (Session Completion)
 

@@ -27,6 +27,7 @@ Inspired by Lee Robinson's [pixo](https://github.com/leerob/pixo), Pixie-Anim fo
 - **Perceptual Quantization**: Uses CIELAB color space and K-Means++ for superior color fidelity.
 - **Temporal Denoising**: Index-reuse logic that treats temporal noise as negligible, dramatically reducing size for real-world video.
 - **Stable Dithering**: Choice of **Ordered (Bayer)** or **Blue Noise** dithering to eliminate spatial "shimmer."
+- **Evaluation-Driven Presets**: Smart **High/Medium/Low** presets determined through thousands of iterations of Gemini-based perceptual scoring.
 - **Parallelized & SIMD**: Multi-threaded quantization via Rayon and Planar AVX2/NEON kernels for nearest-color search.
 - **WASM Playground**: Fully functional, client-side optimizer with direct MP4-to-GIF support.
 - **Subjective LLM Judge**: Automated quality evaluation via Gemini 3 Flash.
@@ -71,7 +72,8 @@ The web UI is a Lit-based application that leverages the Rust core via WASM.
 1. `cd web`
 2. `pnpm install`
 3. `pnpm run dev` (This automatically triggers `build-wasm` to generate bindings)
-4. Drop an MP4 or GIF into the browser to optimize locally.
+4. Drop an MP4 or GIF into the browser and select an **Optimization Preset** (Low, Medium, High).
+5. Pixie-Anim will process the file locally in your browser.
 
 *Note: To prevent browser memory exhaustion, the web playground currently scales video to 640px and caps extraction at 300 frames. Use the CLI for unlimited high-resolution processing.*
 
