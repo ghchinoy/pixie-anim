@@ -45,9 +45,9 @@ Quantization is the process of reducing millions of colors to a palette of 256.
 - **Implementation**: Centroids are picked based on their distance from existing ones.
 - **Benefit**: Ensures that the limited 256-color palette covers the full dynamic range of the scene.
 
-### CIELAB Perceptual Weighting
-- **Mechanism**: All color distance calculations are performed in the CIELAB color space.
-- **Benefit**: Ensures the engine "spends" its limited colors where they are most visible to humans (luminance vs chrominance).
+### Weighted Perceptual Sampling
+- **Mechanism**: Pixie-Anim 0.1.4+ calculates a "visual mass" for every pixel. Pixels with high **Chroma** (saturation) in the CIELAB space are assigned higher weights during both the K-Means++ initialization and the centroid update steps.
+- **Benefit**: Prevents vibrant, high-frequency details (like neon particles or glowing edges) from being collapsed into neutral background colors, ensuring "pops" of color are preserved even in the 256-color GIF limit.
 
 ### Perceptual & Stable Dithering
 Pixie-Anim supports several dithering modes to balance sharpness and stability:
