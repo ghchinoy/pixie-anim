@@ -10,6 +10,12 @@ use crate::error::Result;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
+#[derive(Clone, Copy, Debug)]
+struct LabWeight {
+    lab: crate::color::Lab,
+    weight: f32,
+}
+
 /// Representation of an RGB color.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rgb {
@@ -81,7 +87,7 @@ impl KMeansQuantizer {
 
     /// K-Means++ initialization for Lab centroids
     fn initialize_centroids(
-        pixels: &[crate::color::Lab],
+        pixels: &[LabWeight],
         max_colors: usize,
     ) -> Vec<crate::color::Lab> {
         if pixels.is_empty() {
@@ -89,24 +95,20 @@ impl KMeansQuantizer {
         }
 
         let mut centroids = Vec::with_capacity(max_colors);
-        centroids.push(pixels[0]);
+        centroids.push(pixels[0].lab);
 
         let mut min_distances = vec![f32::MAX; pixels.len()];
 
         while centroids.len() < max_colors {
             let last_centroid = centroids.last().unwrap();
-            let mut total_dist: f64 = 0.0;
-
-            for (i, &pixel) in pixels.iter().enumerate() {
-                let dist = Self::distance_sq(pixel, *last_centroid);
-                if dist < min_distances[i] {
-                    min_distances[i] = dist;
+            
+            for (i, p) in pixels.iter().enumerate() {
+                let dist = Self::distance_sq(p.lab, *last_centroid);
+                // Weight the distance by the perceptual importance
+                let weighted_dist = dist * p.weight;
+                if weighted_dist < min_distances[i] {
+                    min_distances[i] = weighted_dist;
                 }
-                total_dist += min_distances[i] as f64;
-            }
-
-            if total_dist == 0.0 {
-                break;
             }
 
             let mut best_pixel_idx = 0;
@@ -117,7 +119,7 @@ impl KMeansQuantizer {
                     best_pixel_idx = i;
                 }
             }
-            centroids.push(pixels[best_pixel_idx]);
+            centroids.push(pixels[best_pixel_idx].lab);
         }
 
         centroids
@@ -133,14 +135,20 @@ impl Quantizer for KMeansQuantizer {
             });
         }
 
-        // 1. Sub-sample pixels and convert to CIELAB for perceptual refinement
-        let sampled_pixels: Vec<crate::color::Lab> = pixels
+        // 1. Sub-sample pixels and convert to CIELAB with weights
+        let sampled_pixels: Vec<LabWeight> = pixels
             .iter()
             .step_by(self.sample_rate)
-            .map(|p| crate::color::rgb_to_lab(p.r, p.g, p.b))
+            .map(|p| {
+                let lab = crate::color::rgb_to_lab(p.r, p.g, p.b);
+                // Calculate chroma (vibrancy) as perceptual weight
+                let chroma = (lab.a * lab.a + lab.b * lab.b).sqrt();
+                let weight = 1.0 + (chroma / 25.0); // Boost vibrant colors
+                LabWeight { lab, weight }
+            })
             .collect();
 
-        // 2. Initialize centroids using K-Means++ logic on sampled Lab pixels
+        // 2. Initialize centroids using K-Means++ logic on weighted sampled Lab pixels
         let mut centroids = Self::initialize_centroids(&sampled_pixels, max_colors);
 
         let mut assignments = vec![0usize; sampled_pixels.len()];
@@ -154,13 +162,13 @@ impl Quantizer for KMeansQuantizer {
             #[cfg(feature = "rayon")]
             let new_assignments: Vec<usize> = sampled_pixels
                 .par_iter()
-                .map(|&pixel_lab| crate::simd::find_nearest_color_lab(pixel_lab, &planar_centroids))
+                .map(|&p| crate::simd::find_nearest_color_lab(p.lab, &planar_centroids))
                 .collect();
 
             #[cfg(not(feature = "rayon"))]
             let new_assignments: Vec<usize> = sampled_pixels
                 .iter()
-                .map(|&pixel_lab| crate::simd::find_nearest_color_lab(pixel_lab, &planar_centroids))
+                .map(|&p| crate::simd::find_nearest_color_lab(p.lab, &planar_centroids))
                 .collect();
 
             if assignments != new_assignments {
@@ -172,22 +180,22 @@ impl Quantizer for KMeansQuantizer {
                 break;
             }
 
-            // 4. Update step
-            let mut sums = vec![(0.0f32, 0.0f32, 0.0f32, 0usize); centroids.len()];
-            for (i, &pixel_lab) in sampled_pixels.iter().enumerate() {
+            // 4. Update step (Weighted centroid update)
+            let mut sums = vec![(0.0f32, 0.0f32, 0.0f32, 0.0f32); centroids.len()];
+            for (i, &p) in sampled_pixels.iter().enumerate() {
                 let a = assignments[i];
-                sums[a].0 += pixel_lab.l;
-                sums[a].1 += pixel_lab.a;
-                sums[a].2 += pixel_lab.b;
-                sums[a].3 += 1;
+                sums[a].0 += p.lab.l * p.weight;
+                sums[a].1 += p.lab.a * p.weight;
+                sums[a].2 += p.lab.b * p.weight;
+                sums[a].3 += p.weight;
             }
 
             for (c_idx, sum) in sums.iter().enumerate() {
-                if sum.3 > 0 {
+                if sum.3 > 0.0 {
                     centroids[c_idx] = crate::color::Lab {
-                        l: sum.0 / sum.3 as f32,
-                        a: sum.1 / sum.3 as f32,
-                        b: sum.2 / sum.3 as f32,
+                        l: sum.0 / sum.3,
+                        a: sum.1 / sum.3,
+                        b: sum.2 / sum.3,
                     };
                 }
             }
