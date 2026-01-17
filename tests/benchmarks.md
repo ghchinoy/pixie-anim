@@ -13,3 +13,6 @@
 | 2026-01-16 | refined_low | 3999.13 KB | 4.0 | 0.560 | [Detail](tests/reports/2026-01-16_15-53-53_refined_low.md)
 | 2026-01-16 | refined_medium | 5133.42 KB | 7.0 | 0.631 | [Detail](tests/reports/2026-01-16_15-54-31_refined_medium.md)
 | 2026-01-16 | refined_high | 7554.21 KB | 7.0 | 0.828 | [Detail](tests/reports/2026-01-16_15-55-09_refined_high.md)
+| 2026-01-16 | refined_low | 3778.53 KB | 4.0 | 0.483 | [Detail](tests/reports/2026-01-16_17-09-30_refined_low.md)
+| 2026-01-16 | refined_medium | 4996.87 KB | 6.0 | 0.620 | [Detail](tests/reports/2026-01-16_17-10-11_refined_medium.md)
+| 2026-01-16 | refined_high | 7196.00 KB | 7.0 | 0.770 | [Detail](tests/reports/2026-01-16_17-10-49_refined_high.md)
