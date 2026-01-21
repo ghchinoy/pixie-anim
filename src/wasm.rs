@@ -18,13 +18,49 @@ pub fn decode_gif(data: &[u8]) -> Result<Vec<u8>, JsError> {
     let mut total_delay = 0;
     let mut count = 0;
 
+    // Full-screen canvas for compositing frames
+    let mut canvas = vec![0u8; width as usize * height as usize * 4];
+
     while let Some(frame) = reader
         .read_next_frame()
         .map_err(|e| JsError::new(&e.to_string()))?
     {
-        frames.extend_from_slice(&frame.buffer);
+        let fw = frame.width as usize;
+        let fh = frame.height as usize;
+        let fl = frame.left as usize;
+        let ft = frame.top as usize;
+
+        for y in 0..fh {
+            for x in 0..fw {
+                let canvas_idx = ((ft + y) * width as usize + (fl + x)) * 4;
+                let frame_idx = (y * fw + x) * 4;
+
+                // In RGBA mode, the gif crate provides the pixels for the frame's area.
+                // We only copy non-transparent pixels (simplistic approach: alpha > 0).
+                if canvas_idx + 3 < canvas.len() && frame_idx + 3 < frame.buffer.len() {
+                    if frame.buffer[frame_idx + 3] > 0 {
+                        canvas[canvas_idx..canvas_idx + 4]
+                            .copy_from_slice(&frame.buffer[frame_idx..frame_idx + 4]);
+                    }
+                }
+            }
+        }
+
+        frames.extend_from_slice(&canvas);
         total_delay += frame.delay;
         count += 1;
+
+        // Handle disposal method: Restore to background
+        if frame.dispose == gif_crate::DisposalMethod::Background {
+            for y in 0..fh {
+                for x in 0..fw {
+                    let canvas_idx = ((ft + y) * width as usize + (fl + x)) * 4;
+                    if canvas_idx + 3 < canvas.len() {
+                        canvas[canvas_idx..canvas_idx + 4].fill(0);
+                    }
+                }
+            }
+        }
     }
 
     let avg_delay = if count > 0 {
@@ -65,8 +101,26 @@ pub fn encode_gif(
         _ => DitherType::None,
     };
 
+    if width == 0 || height == 0 || num_frames == 0 {
+        return Err(JsError::new("Invalid dimensions or frame count"));
+    }
+
+    // Cap at 2k resolution for safety in 32-bit WASM
+    if width > 2048 || height > 2048 {
+        return Err(JsError::new("Dimensions too large (max 2048x2048)"));
+    }
+
     let delay = (100.0 / fps).floor() as u16;
     let frame_size = width as usize * height as usize * 4;
+    let expected_len = num_frames as usize * frame_size;
+
+    if data.len() < expected_len {
+        return Err(JsError::new(&format!(
+            "Input buffer too small: expected {}, got {}",
+            expected_len,
+            data.len()
+        )));
+    }
 
     // 1. Sampling for palette
     let mut sampled_pixels = Vec::new();

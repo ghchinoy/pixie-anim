@@ -391,7 +391,7 @@ export class PixieApp extends LitElement {
         this.sourceFps = avgDelayMs === 0 ? 10 : 1000 / avgDelayMs;
         this.fps = Math.round(this.sourceFps);
         
-        this.sourceBuffer = new Uint8Array(rawData.buffer, rawData.byteOffset + 12, rawData.byteLength - 12);
+        this.sourceBuffer = rawData.slice(12);
       } else if (file.type.startsWith('video/')) {
         this.status = `ANALYZING ${file.type.split('/')[1].toUpperCase()}...`;
         
@@ -477,7 +477,7 @@ export class PixieApp extends LitElement {
       buffer, 
       width, 
       height, 
-      numFrames: framesProcessed, 
+      numFrames: Math.min(framesProcessed, numFramesExpected), 
       estimatedFps: captureFps 
     };
   }
