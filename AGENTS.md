@@ -61,6 +61,7 @@ For full workflow details: `bd prime`
 
 - **Target Architecture**: When building for `wasm32-unknown-unknown`, always guard SIMD-specific modules (like `x86_64`) with `#[cfg(target_arch = "x86_64")]`.
 - **Allocator**: Use `talc` as the global allocator for WASM to minimize binary size.
+- **Rayon & WASM**: Standard `rayon` causes a `RuntimeError: unreachable` in WASM because it attempts to spawn a thread pool. Always disable the `rayon` feature for `wasm32-unknown-unknown` targets.
 - **Naming**: To avoid linking collisions between the library and CLI binary, the library is named `pixie_anim_lib`. Use `use pixie_anim_lib::...` for imports.
 - **Panic Strategy**: Criterion benchmarks require `panic = "unwind"`, while optimized releases use `panic = "abort"`. These are handled via profile overrides in `Cargo.toml`.
 
@@ -72,6 +73,8 @@ For full workflow details: `bd prime`
 2. **Lossy LZW**: We implement lossiness by matching "Fuzzy Neighbors" in the palette. This only works effectively if the palette is ordered by similarity (e.g., using the **Zeng Algorithm**).
 
 3. **WASM Memory**: For large animations (70MB+), always revoke old Object URLs and reuse dictionary buffers in the LZW encoder to prevent browser hangs.
+- **GIF Compositing**: Never assume GIF frames are full-screen. Always implement a "virtual canvas" when decoding GIFs to raw RGBA buffers for re-optimization; otherwise, sub-rectangle frames will cause buffer length mismatches in downstream encoders.
+- **WASM Memory Safety**: When passing large buffers from JS to WASM, prefer `uint8Array.slice()` over `new Uint8Array(buffer, offset, length)`. The latter creates a view into WASM memory that can become "detached" if the WASM heap grows (e.g., during a large allocation in `encode_gif`), leading to memory access errors.
 
 4. **Subjective Evaluation**: Use `gemini-3-flash-preview` for visual quality checks. Since it doesn't support `image/gif`, extract key frames as PNGs for comparison.
 
