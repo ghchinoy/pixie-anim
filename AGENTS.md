@@ -49,6 +49,7 @@ For full workflow details: `bd prime`
 - **Crate Publication**: To verify a "Zero-Dependency" mandate, always test with `cargo build --no-default-features`. Ensure all public APIs use Struct-based parameter passing to avoid `too_many_arguments` lints and improve ergonomics.
 - **Reference Code**: Always consult `~/dev/github/pixo` for SIMD patterns, WASM bindings, and "Pixo" stylistic conventions before implementing core modules.
 - **WASM Versioning**: `wasm-bindgen-cli` MUST match the version in `Cargo.lock` exactly. The CI/CD pipeline in `.github/workflows/deploy.yml` handles this automatically by extracting the version at runtime. Always use `actions/cache` for the `wasm-bindgen` binary to avoid 4-minute re-compilations.
+- **pnpm Supply Chain Policies**: When setting up the web environment via `pnpm install`, if pnpm halts or warns regarding ignored build scripts (such as `esbuild`), run `pnpm approve-builds` interactively to allow compiling Vite's dependencies.
 
 ## Code Standards for Codecs
 
@@ -64,6 +65,7 @@ For full workflow details: `bd prime`
 - **Rayon & WASM**: Standard `rayon` causes a `RuntimeError: unreachable` in WASM because it attempts to spawn a thread pool. Always disable the `rayon` feature for `wasm32-unknown-unknown` targets.
 - **Naming**: To avoid linking collisions between the library and CLI binary, the library is named `pixie_anim_lib`. Use `use pixie_anim_lib::...` for imports.
 - **Panic Strategy**: Criterion benchmarks require `panic = "unwind"`, while optimized releases use `panic = "abort"`. These are handled via profile overrides in `Cargo.toml`.
+- **CLI Tooling**: If `wasm-bindgen` is missing from the shell path during `npm run build-wasm`, verify the version in `Cargo.lock` (e.g., `0.2.106`) and install it using `cargo install wasm-bindgen-cli --version <version>`. Ensure `~/.cargo/bin/` is in the terminal environment PATH.
 
 
 ## GIF Specification & Codec Heuristics
@@ -104,7 +106,8 @@ Before any `cargo publish`, the following sequence MUST be executed and verified
 4.  **Unit Tests**: Run `cargo test --all-features` to verify logic integrity.
 5.  **WASM Build**: Run `npm run build-wasm` in the `web/` directory to verify bindings and WASM stability.
 6.  **Examples**: Verify all examples compile: `cargo check --examples --all-features`.
-7.  **Dry Run**: Execute `cargo publish --dry-run` to catch metadata or manifest issues.
+7.  **Benchmarks Validation**: Verify all benchmarks compile successfully by running `cargo check --benches --all-features`.
+8.  **Dry Run**: Execute `cargo publish --dry-run` to catch metadata or manifest issues.
 
 ## Core Algorithm Refinements
 
