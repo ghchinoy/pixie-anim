@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pixie_anim_lib::gif::{GifOptions, GifWriter};
+use pixie_anim_lib::gif::{GifOptions, GifWriter, ImageDescriptor};
+use pixie_anim_lib::lzw::LzwEncoder;
 use pixie_anim_lib::quant::{KMeansQuantizer, Quantizer, Rgb};
 use std::fs;
 use std::process::Command;
@@ -41,7 +42,7 @@ fn benchmark_pixo_gif_encoding(c: &mut Criterion) {
             writer.write_logical_screen_descriptor(&options).unwrap();
 
             let mut pal_bytes = Vec::new();
-            for p in &palette.colors {
+            for p in &palette.palette.colors {
                 pal_bytes.push(p.r);
                 pal_bytes.push(p.g);
                 pal_bytes.push(p.b);
@@ -54,11 +55,20 @@ fn benchmark_pixo_gif_encoding(c: &mut Criterion) {
 
             let indices: Vec<u8> = pixels
                 .iter()
-                .map(|&p| pixie_anim_lib::simd::find_nearest_color(p, &palette.colors) as u8)
+                .map(|&p| pixie_anim_lib::simd::find_nearest_color(p, &palette.palette.colors) as u8)
                 .collect();
 
+            let descriptor = ImageDescriptor {
+                x: 0,
+                y: 0,
+                width: width as u16,
+                height: height as u16,
+                lzw_min_code_size: 8,
+            };
+            let mut lzw_encoder = LzwEncoder::new(8);
+
             writer
-                .write_image_data(0, 0, width as u16, height as u16, 8, &indices)
+                .write_image_data(&descriptor, &indices, &mut lzw_encoder)
                 .unwrap();
             writer.write_trailer().unwrap();
 
